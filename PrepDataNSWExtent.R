@@ -61,8 +61,8 @@ writeRaster(elev,"AppEnvData/elev.asc",overwrite=TRUE)
 soil<-shapefile("/Users/daisy/GoogleDrive/Projects/OEHProtectedSpecies/RawData/EnvironmentalData/Soils/soilAtlas2M/soilAtlas2M.shp")
 Smajor<-read.csv("~/GoogleDrive/Projects/OEHProtectedSpecies/RawData/EnvironmentalData/Soils/SoilAtlas2M_ASC/asclut.txt", header=FALSE,col.names = c("MAP_UNIT","V2","Major_Soil_abr","Major_Soil"))#major soil classes
 soil@data <- merge(soil@data,Smajor,by="MAP_UNIT", all.x=T, sort=F)
-
 soil<-crop(soil,e)
+soil<-spTransform(soil, paste(P4S))
 writeOGR(soil, ".", "AppEnvData/soil/soilAtlas2M", driver="ESRI Shapefile")
 
 
