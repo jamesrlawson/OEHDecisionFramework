@@ -9,17 +9,18 @@ require(rgdal)
 #clip data to smaller area
 e<-extent(135.581,156.275,-39.525,-23.975)
 
-P4S <- CRS("+proj=longlat +datum=WGS84")#projection
+P4S <- CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")#projection
 
 #use SOS data for extent object
-SOS<-shapefile("AppEnvData/SOS/SearchResults.shp")
+SOS<-shapefile("/Users/daisy/GoogleDrive/Projects/OEHProtectedSpecies/RawData/OEHManagmentSites/data/SiteManagedSpecies03112017/SearchResults.shp")
 SOS<-spTransform(SOS, paste(P4S))
+writeOGR(SOS, ".", "AppEnvData/SOS/OEHManagmentSites", driver="ESRI Shapefile")
 
 ###############
 #CAPAD
 ##############
 
-CPD<-shapefile("/Users/daisy/GoogleDrive/Projects/OEHProtectedSpecies/RawData/CAPAD2/CAPAD_2016_tech_spec_terrestrial/CAPAD_2016_terrestrial.shp")
+CPD<-readOGR("/Users/daisy/GoogleDrive/Projects/OEHProtectedSpecies/RawData/CAPAD2/CAPAD_2016_tech_spec_terrestrial/CAPAD_2016_terrestrial.shp")
 CPD_NSW<-CPD[CPD$STATE=="NSW" |CPD$STATE=="JBT",]
 CPD_NSW<-spTransform(CPD_NSW, paste(P4S))
 writeOGR(CPD_NSW, ".", "AppEnvData/CAPADnsw/CAPAD2_NSW", driver="ESRI Shapefile")
