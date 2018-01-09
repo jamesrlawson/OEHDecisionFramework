@@ -81,4 +81,16 @@ FFire<-raster("/Users/daisy/GoogleDrive/Projects/OEHProtectedSpecies/RawData/Mul
 
 writeRaster(FTmax,"AppEnvData/NarClimffdigt50.asc",overwrite=TRUE)
 
+
+#################
+#map of NSW
+#################
+
+#Map of NSW
+AUS<-readOGR("/Users/daisy/GoogleDrive/PhD/Data/Spatial/AustraliaPolygon/STE11aAust.shp")
+NSW<-AUS[AUS$STATE_NAME=="New South Wales",]
+NSW <- gSimplify(NSW, tol=0.01, topologyPreserve=TRUE)
+
+
+
   
