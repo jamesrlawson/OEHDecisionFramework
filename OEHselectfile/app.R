@@ -10,6 +10,7 @@ options(shiny.maxRequestSize=30*1024^2)#change the maximum file size
 
 library(shiny)
 library(leaflet)
+library(Hmisc)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -25,23 +26,22 @@ ui <- fluidPage(
                   accept = c("text/csv",
                              "text/comma-separated-values,text/plain",
                              ".csv", ".xlsx", ".xls")),
-        selectInput("lat_column", "Column with latitude:", choices = c("wait","for","it")), 
-        selectInput("long_column", "Column with longitude:", choices = NULL),
-        selectInput("spec_column", "Column with species names:", choices = NULL)
+        selectInput("spec_column", "Column with species names:", choices = NULL),
+        selectInput("species", "Select species:", choices = c("Choose","column","first")),
+        selectInput("lat_column", "Column with latitude:", choices = NULL), 
+        selectInput("long_column", "Column with longitude:", choices = NULL)
         
-        # selectInput("species", label = "Select species:",
-        #             choices = sort(sp$Scientific.name), multiple=TRUE, selectize=FALSE, 
-        #             selected = sort(sp$Scientific.name)[1])
-        # 
       ),
       
   # Show a plot of the generated distribution
   mainPanel(
-      textOutput("table_display"),  ###TODO change to map
       leafletOutput("mymap")
       )
    )
 )
+
+
+########################
 
 # define where data is and what columns to use
 
@@ -50,9 +50,7 @@ ui <- fluidPage(
 server <- function(input, output,session) {
    
   info <- eventReactive(input$uploadedfile, {
-    
     req(input$uploadedfile)
-    
     # read in data 
     fext <- tools::file_ext(input$uploadedfile)[1]#get extension
     if(fext == "csv"){
@@ -63,25 +61,36 @@ server <- function(input, output,session) {
     }
     
     vars <- names(df)
-    #spec<-unique(df$)
     
-    # Update select input immediately after clicking on the action button.
+    # Identify columns names
+    updateSelectInput(session, "spec_column", "Column with species names:", 
+                      choices = vars, selected="")
+    
     updateSelectInput(session, "lat_column", "Column with latitude:", 
                       choices = vars, selected="")
     updateSelectInput(session, "long_column", "Column with longitude:", 
                       choices = vars, selected="")
-    updateSelectInput(session, "spec_column", "Column with species names:", 
-                      choices = vars, selected="")
-    
-    
-    return(df)
-  })
-
   
-  output$table_display <- renderText({
-    f <- info()
-    names(f)
-  })
+    return(df)
+  }) 
+  
+  # ########################
+  # ########################
+  # ########################
+  # #selectInput("species", "Select species:", choices = NULL),
+  # 
+  # vars2 = eventReactive({
+  #   if (input$species == "") return()
+  #   sort(unique(get(df)[, df$spec_columns]))
+  # })
+  # 
+  # updateSelectInput(session, "species", "Select species:",
+  #                   choices = vars2, selected="")
+  # #########################
+  # ########################
+  # ########################
+
+
   
 ######################  Map   ######################
  output$mymap<- renderLeaflet({
