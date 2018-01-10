@@ -26,8 +26,13 @@ ui <- fluidPage(
                              "text/comma-separated-values,text/plain",
                              ".csv", ".xlsx", ".xls")),
         selectInput("lat_column", "Column with latitude:", choices = c("wait","for","it")), 
-        selectInput("long_column", "Column with longitude:", choices = NULL)
+        selectInput("long_column", "Column with longitude:", choices = NULL),
+        selectInput("spec_column", "Column with species names:", choices = NULL)
         
+        # selectInput("species", label = "Select species:",
+        #             choices = sort(sp$Scientific.name), multiple=TRUE, selectize=FALSE, 
+        #             selected = sort(sp$Scientific.name)[1])
+        # 
       ),
       
   # Show a plot of the generated distribution
@@ -58,11 +63,14 @@ server <- function(input, output,session) {
     }
     
     vars <- names(df)
+    #spec<-unique(df$)
     
     # Update select input immediately after clicking on the action button.
     updateSelectInput(session, "lat_column", "Column with latitude:", 
                       choices = vars, selected="")
     updateSelectInput(session, "long_column", "Column with longitude:", 
+                      choices = vars, selected="")
+    updateSelectInput(session, "spec_column", "Column with species names:", 
                       choices = vars, selected="")
     
     
