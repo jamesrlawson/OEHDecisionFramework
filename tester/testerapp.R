@@ -55,13 +55,14 @@ server = function(input, output, session){
   
   #Based on the column selected get the species names
   # i want this to update the values of the selected variable
-  outVar2 = reactive({
-    if (input$species == "") return()
-    sort(unique(info[, input$spec_column])) #####should I refer to me data as info?
+  outVar2 <- reactive({
+    f <- info()
+    if (input$spec_column == "") return()
+    sort(unique(f[, input$spec_column])) #####should I refer to me data as info?
   })
   #
   
-  observeEvent(input$spec_columns, {#####I'm not sure if this is correct, I don't understand why in the example code they refer to the previous observer events
+  observeEvent(input$spec_column, {
     updateSelectInput(session, "species", choices = outVar2())
   })
   
