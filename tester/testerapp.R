@@ -1,5 +1,5 @@
 
-#df<-read.csv("/Users/daisy/GoogleDrive/Projects/OEHProtectedSpecies/RawData/SpeciesObservations/BionetRecords/obsSmall.csv")
+#df<-read.csv("/Users/daisy/GoogleDrive/Projects/OEHProtectedSpecies/RawData/SpeciesObservations/BionetRecords/obsSmall2.csv")
 
 library(shiny)
 library(leaflet)
@@ -65,13 +65,6 @@ server = function(input, output, session){
   observeEvent(input$spec_column, {
     updateSelectInput(session, "species", choices = outVar2())
   })
-  
-  
-  # # Reactive expression for the data subsetted to what the user selected
-  # filteredData <- reactive({
-  #   quakes[quakes$mag >= input$range[1] & quakes$mag <= input$range[2],]
-  # })
-  
   
   
   output$mymap<- renderLeaflet({
