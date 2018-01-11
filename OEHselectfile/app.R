@@ -59,42 +59,40 @@ server <- function(input, output,session) {
     if(fext %in% c("xls","xlsx")){
       df <- as.data.frame(read_excel(input$uploadedfile$datapath))
     }
-    
-    vars <- names(df)
-    
-    # Identify columns names
+    vars <- names(df)#vector of column names
+    # Identify columns interested in
     updateSelectInput(session, "spec_column", "Column with species names:", 
                       choices = vars, selected="")
-    
     updateSelectInput(session, "lat_column", "Column with latitude:", 
                       choices = vars, selected="")
     updateSelectInput(session, "long_column", "Column with longitude:", 
                       choices = vars, selected="")
-  
-    return(df)
+    return(df)#return the data
   }) 
   
-  # ########################
-  # ########################
-  # ########################
-  # #selectInput("species", "Select species:", choices = NULL),
-  # 
-  # vars2 = eventReactive({
-  #   if (input$species == "") return()
-  #   sort(unique(get(df)[, df$spec_columns]))
-  # })
-  # 
-  # updateSelectInput(session, "species", "Select species:",
-  #                   choices = vars2, selected="")
-  # #########################
-  # ########################
-  # ########################
-
-
+  #select species name
+  outVar2 <- reactive({
+    f <- info()
+    if (input$spec_column == "") return()
+    sort(unique(f[, input$spec_column])) #####should I refer to me data as info?
+  })
+  observeEvent(input$spec_column, {
+    updateSelectInput(session, "species", choices = outVar2())
+  })
+  
+  # Reactive expression for data subsetted based on species user has selected
+  spData <- reactive({
+    f <- info()
+    if (input$species == "") return()
+    f2<- subset(f,Scientific == input$species) ###TODO fix so instead of "Scientific" input$spec_column is used
+    return(f2)
+  })
+  
   
 ######################  Map   ######################
  output$mymap<- renderLeaflet({
-    df<-info()
+    df<-spData()
+   
     leaflet() %>%
       addTiles() %>%
       addCircles(df$Longitude_, df$Latitude_G,
