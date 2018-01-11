@@ -45,8 +45,6 @@ ui <- fluidPage(
 
 # define where data is and what columns to use
 
-####TO DO - rename lat and long column by the values that were selected
-####To DO - interactively select species and subset data based on this
 server <- function(input, output,session) {
    
   info <- eventReactive(input$uploadedfile, {
@@ -69,11 +67,11 @@ server <- function(input, output,session) {
                       choices = vars, selected="")
     return(df)#return the data
   }) 
-  if(is.null(input$spec_column))return()
+  
+
   #select species name
   outVar2 <- reactive({
     f <- info()
-    #if (input$spec_column == "") return()
     if(is.null(input$spec_column))return()
     sort(unique(f[, input$spec_column])) 
   })
@@ -93,6 +91,8 @@ server <- function(input, output,session) {
   
 ######################  Map   ######################
  output$mymap<- renderLeaflet({
+   if(is.null(input$lat_column))return()
+   if(is.null(input$long_column))return()
     spdat<-spData()
     spdat$lat <- spdat[, input$lat_column]
     spdat$long <- spdat[, input$long_column]
