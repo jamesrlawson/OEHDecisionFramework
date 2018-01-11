@@ -27,7 +27,7 @@ ui <- fluidPage(
                              "text/comma-separated-values,text/plain",
                              ".csv", ".xlsx", ".xls")),
         selectInput("spec_column", "Column with species names:", choices = NULL),
-        selectInput("species", "Select species:", choices = c("Choose","column","first")),
+        selectInput("species", "Select species:", choices = NULL),
         selectInput("lat_column", "Column with latitude:", choices = NULL), 
         selectInput("long_column", "Column with longitude:", choices = NULL)
         
@@ -69,12 +69,13 @@ server <- function(input, output,session) {
                       choices = vars, selected="")
     return(df)#return the data
   }) 
-  
+  if(is.null(input$spec_column))return()
   #select species name
   outVar2 <- reactive({
     f <- info()
-    if (input$spec_column == "") return()
-    sort(unique(f[, input$spec_column])) #####should I refer to me data as info?
+    #if (input$spec_column == "") return()
+    if(is.null(input$spec_column))return()
+    sort(unique(f[, input$spec_column])) 
   })
   observeEvent(input$spec_column, {
     updateSelectInput(session, "species", choices = outVar2())
@@ -83,26 +84,29 @@ server <- function(input, output,session) {
   # Reactive expression for data subsetted based on species user has selected
   spData <- reactive({
     f <- info()
-    if (input$species == "") return()
-    f2<- subset(f,Scientific == input$species) ###TODO fix so instead of "Scientific" input$spec_column is used
+    if(is.null(input$species))return()
+    f$SPECIES <- f[, input$spec_column]
+    f2<- subset(f,SPECIES == input$species)
     return(f2)
   })
   
   
 ######################  Map   ######################
  output$mymap<- renderLeaflet({
-    df<-spData()
+    spdat<-spData()
+    spdat$lat <- spdat[, input$lat_column]
+    spdat$long <- spdat[, input$long_column]
    
     leaflet() %>%
       addTiles() %>%
-      addCircles(df$Longitude_, df$Latitude_G,
+      addCircles(spdat$long, spdat$lat,
                  opacity = .7,
                  fill = TRUE,
                  popup = paste(
-                   '<strong>Site:</strong>', capitalize(as.character(df$Descriptio)), '<br>',
-                   '<strong>Accuracy (m):</strong>', df$Accuracy,'<br>',
-                   '<strong>Date of last observation:</strong>', df$DateLast,'<br>',
-                   '<strong>Number of individuals:</strong>', df$NumberIndi))%>%
+                   '<strong>Site:</strong>', capitalize(as.character(spdat$Descriptio)), '<br>',
+                   '<strong>Accuracy (m):</strong>', spdat$Accuracy,'<br>',
+                   '<strong>Date of last observation:</strong>', spdat$DateLast,'<br>',
+                   '<strong>Number of individuals:</strong>', spdat$NumberIndi))%>%
       addMiniMap(tiles = providers$Esri.WorldStreetMap,
                  toggleDisplay = TRUE,
                  position = "bottomleft")
