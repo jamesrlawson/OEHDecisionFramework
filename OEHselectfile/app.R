@@ -2,21 +2,23 @@
 # This is a Shiny web application to assist in the selection of sites for species undert the "Save our Species" programme. You can run the application by clicking
 # the 'Run App' button above.
 
-#############
-#change the maximum file size
-#############
 options(shiny.maxRequestSize=30*1024^2)#change the maximum file size
+
+#source("www/R/plotWindrose.R", local = T)
 
 
 library(shiny)
 library(leaflet)
 library(Hmisc)
+library(raster)
+library(sp)
+library(rgdal)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
    
    # Application title
-   titlePanel("SOS data loader"),
+   titlePanel("SOS site selection tool"),
    
    # Sidebar with where you load csv file and select columns 
    sidebarLayout(
@@ -29,13 +31,19 @@ ui <- fluidPage(
         selectInput("spec_column", "Column with species names:", choices = NULL),
         selectInput("species", "Select species:", choices = NULL),
         selectInput("lat_column", "Column with latitude:", choices = NULL), 
-        selectInput("long_column", "Column with longitude:", choices = NULL)
+        selectInput("long_column", "Column with longitude:", choices = NULL),
+        actionButton("env", "Extract environmental data")
         
       ),
       
   # Show a plot of the generated distribution
   mainPanel(
-      leafletOutput("mymap")
+      leafletOutput("mymap"),
+      absolutePanel(top = 25, right = 20, width = 150, draggable = TRUE,
+                    selectInput("bmap", "Select base map", 
+                                choices = c("Esri.WorldImagery",
+                                           "OpenStreetMap.Mapnik"), 
+                                selected = "OpenStreetMap.Mapnik"))
       )
    )
 )
@@ -91,14 +99,19 @@ server <- function(input, output,session) {
   
 ######################  Map   ######################
  output$mymap<- renderLeaflet({
-   if(is.null(input$lat_column))return()
-   if(is.null(input$long_column))return()
+    #runif(input$lat_column)
+    #runif(input$long_column)
+   # #if(is.null(input$lat_column))return()
+   #if(is.null(input$long_column))return()
     spdat<-spData()
     spdat$lat <- spdat[, input$lat_column]
     spdat$long <- spdat[, input$long_column]
-   
-    leaflet() %>%
-      addTiles() %>%
+
+    
+     leaflet() %>%
+    #   addTiles() %>%
+    #isolate(leaflet() %>%
+              addProviderTiles(input$bmap) %>%
       addCircles(spdat$long, spdat$lat,
                  opacity = .7,
                  fill = TRUE,
@@ -113,7 +126,15 @@ server <- function(input, output,session) {
 
   })
 ####################################################
+#Extrat Environmental data
+###################################################
   
+  EnvDat <- eventReactive(input$env, {
+    #runif(input$lat_column)
+    #runif(input$long_column)
+    
+  })
+
   
 }
 
