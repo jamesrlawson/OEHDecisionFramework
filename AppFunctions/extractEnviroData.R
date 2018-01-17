@@ -1,6 +1,6 @@
 #function to extract environmental data and CAPAD protected areas
 
-# dat<-read.csv("/Users/daisy/GoogleDrive/Projects/OEHProtectedSpecies/RawData/SpeciesObservations/BionetRecords/obsSmall2.csv",header=TRUE)
+dat<-read.csv("/Users/daisy/GoogleDrive/Projects/OEHProtectedSpecies/RawData/SpeciesObservations/BionetRecords/obsSmall2.csv",header=TRUE)
 # 
 # lat<-dat$Latitude_G
 # long<-dat$Longitude_
