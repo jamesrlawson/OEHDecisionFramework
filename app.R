@@ -19,36 +19,93 @@ library(shinythemes)
 # Define UI for application that draws a histogram
 ui <- fluidPage(theme = shinytheme("cosmo"),
    titlePanel("SOS site selection tool"),
-   # navbarPage(title="Species site ",
-   #            tabPanel("Run an Optimization",
+   navbarPage(title="",
+        tabPanel("Observations",
    # 
    # Sidebar with where you load csv file and select columns 
-   sidebarLayout(
-      sidebarPanel(
-        fileInput("uploadedfile", "Choose CSV File",
-                  multiple = FALSE,
-                  accept = c("text/csv",
-                             "text/comma-separated-values,text/plain",
-                             ".csv", ".xlsx", ".xls")),
-        selectInput("spec_column", "Column with species names:", choices = NULL),
-        selectInput("species", "Select species:", choices = NULL),
-        selectInput("lat_column", "Column with latitude:", choices = NULL), 
-        selectInput("long_column", "Column with longitude:", choices = NULL),
-        actionButton("env", "Extract environmental data")
-        
-      ),
+               sidebarLayout(
+                  sidebarPanel(
+                    fileInput("uploadedfile", "Choose CSV File",
+                              multiple = FALSE,
+                              accept = c("text/csv",
+                                         "text/comma-separated-values,text/plain",
+                                         ".csv", ".xlsx", ".xls")),
+                    selectInput("spec_column", "Column with species names:", choices = NULL),
+                    selectInput("species", "Select species:", choices = NULL),
+                    selectInput("lat_column", "Column with latitude:", choices = NULL), 
+                    selectInput("long_column", "Column with longitude:", choices = NULL),
+                    actionButton("env", "Extract environmental data")
       
-  # Show a plot of the generated distribution
-  mainPanel(
-      leafletOutput("mymap"),
-      absolutePanel(top = 25, right = 20, width = 150, draggable = TRUE,
-                    selectInput("bmap", "Select base map", 
-                                choices = c("Esri.WorldImagery",
-                                           "OpenStreetMap.Mapnik"), 
-                                selected = "OpenStreetMap.Mapnik")),
-      plotOutput(outputId = "distPlot")
-      )
+                  ),
+                  
+              # Show a plot of the generated distribution
+                mainPanel(
+                  tabsetPanel(
+                    tabPanel("Map", 
+                        leafletOutput("mymap"),
+                        absolutePanel(top = 25, right = 20, width = 150, draggable = TRUE,
+                                      selectInput("bmap", "Select base map", 
+                                                  choices = c("Esri.WorldImagery",
+                                                             "OpenStreetMap.Mapnik"), 
+                                                  selected = "OpenStreetMap.Mapnik")),
+                        plotOutput(outputId = "distPlot")
+                    ),
+                    tabPanel("Environmental variation"
+                      #add histograms
+                    ),
+                    tabPanel("Observation summary"
+                        #add text of findings and button to print out pdf
+                    )
+                  )
+                  )
+              )
+   ),
+                  
+            
+        # ),
+    tabPanel("Site Selection",
+             # 
+             # Sidebar with where you load csv file and select columns 
+             sidebarLayout(
+               sidebarPanel(
+                 # fileInput("uploadedfile", "Choose CSV File",
+                 #           multiple = FALSE,
+                 #           accept = c("text/csv",
+                 #                      "text/comma-separated-values,text/plain",
+                 #                      ".csv", ".xlsx", ".xls")),
+                 # selectInput("spec_column", "Column with species names:", choices = NULL),
+                 # selectInput("species", "Select species:", choices = NULL),
+                 # selectInput("lat_column", "Column with latitude:", choices = NULL), 
+                 # selectInput("long_column", "Column with longitude:", choices = NULL),
+                 # actionButton("env", "Extract environmental data")
+                 
+               ),
+               
+               # Show a plot of the generated distribution
+               mainPanel(
+                 tabsetPanel(
+                   tabPanel("Managment sites", 
+                            leafletOutput("mymap"),
+                            absolutePanel(top = 25, right = 20, width = 150, draggable = TRUE,
+                                          selectInput("bmap", "Select base map", 
+                                                      choices = c("Esri.WorldImagery",
+                                                                  "OpenStreetMap.Mapnik"), 
+                                                      selected = "OpenStreetMap.Mapnik")),
+                            plotOutput(outputId = "distPlot")
+                   ),
+                   tabPanel("Cluster analysis"
+                            #add histograms
+                   ),
+                   tabPanel("Site summary"
+                            #add text of findings and button to print out pdf
+                   )
+                 )
+               )
+             
+             )
+    )
    )
+   
 )
 
 
