@@ -1,3 +1,7 @@
+#TODO: fix error in mapping area when app first opened - lat and longs are not defined
+#TODO: add warning to "Environmental variation" tab - envrironmental data must be extractd forst
+#TODO: change base maps names by adding ifelse function in server
+
 
 options(shiny.maxRequestSize=30*1024^2)#change the maximum file size
 
@@ -29,7 +33,7 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                         selectInput("species", "Select species:", choices = NULL),
                                         selectInput("lat_column", "Column with latitude:", choices = NULL), 
                                         selectInput("long_column", "Column with longitude:", choices = NULL),
-                                        actionButton("env", "Extract environmental data")
+                                        actionButton("env", "Fetch environmental data")
                                         
                                       ),
                                       
@@ -39,17 +43,25 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                           tabPanel("Map", 
                                                    
                                                    leafletOutput("mymap"),
-                                                   absolutePanel(top = 25, right = 20, width = 150, draggable = TRUE,
+                                                   absolutePanel(top = 45, right = 20, width = 150, draggable = TRUE,
                                                                  selectInput("bmap", "Select base map", 
                                                                              choices = c("Esri.WorldImagery",
                                                                                          "OpenStreetMap.Mapnik"), 
-                                                                             selected = "OpenStreetMap.Mapnik")),
-                                                   plotOutput(outputId = "distPlot")
+                                                                             selected = "OpenStreetMap.Mapnik"))
+                                                   
                                           ),
+                                          
+                                          tabPanel("Number of populations"
+                                                   #add text of findings and button to print out pdf
+                                          ),
+                                          
                                           tabPanel("Environmental variation"
+                                                    ,
+                                                    plotOutput(outputId = "distPlot")
+                                          
                                                    #add histograms
                                           ),
-                                          tabPanel("Observation summary"
+                                          tabPanel("Summary"
                                                    #add text of findings and button to print out pdf
                                           )
                                           
@@ -164,11 +176,10 @@ server <- function(input, output,session) {
                  position = "bottomleft")
     
   })
-  ####################################################
+
+  
+  
   #Extrat Environmental data
-  ###################################################
-  
-  
   EnvDat <- eventReactive(input$env, {
     req(input$env)
     spdat<-spData()
@@ -180,6 +191,8 @@ server <- function(input, output,session) {
   })
   
   
+ 
+  #dummy plot that uses environmental data
   output$distPlot <- renderPlot({
     #if(is.null(input$EnvDat))return()
     env<-EnvDat()
@@ -193,10 +206,6 @@ server <- function(input, output,session) {
     
   })
   
-  # output$results = renderPrint({
-  #   head()
-  # })
-  # 
   
 }
 
