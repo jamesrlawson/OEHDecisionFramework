@@ -15,6 +15,7 @@ library(raster)
 library(sp)
 library(rgdal)
 library(shinythemes)
+library(ggplot2)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(theme = shinytheme("cosmo"),
@@ -24,7 +25,7 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                     # Sidebar with where you load csv file and select columns 
                                     sidebarLayout(
                                       sidebarPanel(
-                                        fileInput("uploadedfile", "Choose CSV File",
+                                        fileInput("uploadedfile", "Choose observation file",
                                                   multiple = FALSE,
                                                   accept = c("text/csv",
                                                              "text/comma-separated-values,text/plain",
@@ -33,7 +34,11 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                         selectInput("species", "Select species:", choices = NULL),
                                         selectInput("lat_column", "Column with latitude:", choices = NULL), 
                                         selectInput("long_column", "Column with longitude:", choices = NULL),
-                                        actionButton("env", "Fetch environmental data")
+                                        fileInput("SOSsitefile", "Choose management sites shapefile",
+                                                  multiple = FALSE,
+                                                  accept = ".shp"),
+                                        selectInput("SOSspecies", "Select management species name:", choices = NULL),
+                                        actionButton("env", "Press to fetch enviro. data")
                                         
                                       ),
                                       
@@ -143,6 +148,11 @@ server <- function(input, output,session) {
     f2<- subset(f,SPECIES == input$species)
     return(f2)
   })
+  
+  
+  
+  
+  
   
   
   ######################  Map   ######################
