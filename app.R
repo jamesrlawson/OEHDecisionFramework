@@ -37,7 +37,7 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                         fileInput("SOSsitefile", "Choose management sites shapefile",
                                                   multiple = FALSE,
                                                   accept = ".shp"),
-                                        selectInput("SOSspecies", "Select management species name:", choices = NULL),
+                                        selectInput("SOSspecies", "Select management site species name:", choices = NULL),
                                         actionButton("env", "Press to fetch enviro. data")
                                         
                                       ),
@@ -149,11 +149,24 @@ server <- function(input, output,session) {
     return(f2)
   })
   
+  #"SOSspecies"
+  SOSsites <- eventReactive(input$SOSsitefile, {
+    req(input$SOSsitefile)
+    # read in SOS site managment shapefile  
+    sites <- tools::file_ext(input$uploadedfile)[1]#get extension
+    if(fext == "shp"){
+      sos <- shapefile(input$SOSsitefile$datapath,
+                        p4s = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
+      return(sos)
+    } 
+    #make list of species names
+    siteSP <- unique(sites@data$SciName)#vector of species names
+    # Identify species interested in
+    updateSelectInput(session, "SOSspecies", "Select management site species name:",
+                      choices = siteSP, selected="")
+  })
   
-  
-  
-  
-  
+
   
   ######################  Map   ######################
   output$mymap<- renderLeaflet({
