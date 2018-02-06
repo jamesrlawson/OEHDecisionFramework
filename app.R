@@ -1,7 +1,7 @@
 #TODO: fix error in mapping area when app first opened - lat and longs are not defined
-#TODO: add warning to "Environmental variation" tab - envrironmental data must be extractd forst
+#TODO: add warning to "Environmental variation" tab - envrironmental data must be extractd first
 #TODO: change base maps names by adding ifelse function in server
-
+#TODO: ideally you should interactively be able to open shapefile
 
 options(shiny.maxRequestSize=30*1024^2)#change the maximum file size
 
@@ -16,6 +16,8 @@ library(sp)
 library(rgdal)
 library(shinythemes)
 library(ggplot2)
+library(foreign)
+library(maptools)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(theme = shinytheme("cosmo"),
@@ -34,10 +36,9 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                         selectInput("species", "Select species:", choices = NULL),
                                         selectInput("lat_column", "Column with latitude:", choices = NULL), 
                                         selectInput("long_column", "Column with longitude:", choices = NULL),
-                                        fileInput("SOSsitefile", "Choose management sites shapefile",
-                                                  multiple = FALSE,
-                                                  accept = ".shp"),
-                                        selectInput("SOSspecies", "Select management site species name:", choices = NULL),
+                                        selectInput("SOSspecies", 
+                                                    "Select management site species name:", 
+                                                    choices=NULL),
                                         actionButton("env", "Press to fetch enviro. data")
                                         
                                       ),
@@ -56,8 +57,21 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                                    
                                           ),
                                           
-                                          tabPanel("Number of populations"
-                                                   #add text of findings and button to print out pdf
+                                          tabPanel("Number of populations",
+                                                  #add text about determining the number of populations
+                                                  h4(strong("CRITERIA 1: NUMBER OF POPULATIONS")),
+                                                  h5("How many populations/sites should be managed to maximise likelihood of long-term viability?"),
+                                                  h5("Should all known locations of the species be managed?"),
+                                                  br(),
+                                                  strong("Populations are defined as ‘geographically or otherwise distinct groups of individuals within the same species, between which there is little demographic or genetic exchange (typically one successful migrant individual or gamete per year or less’ (NSW Scientific Committee 2014)."),
+                                                  br(),
+                                                  br(),
+                                                  p("The determination of what constitutes the optimal number of managed populations and the difference between the terms ‘effective population size’ and ‘population size’ (N) also needs to be defined. There is no general optimal number of populations. However the IUCN consider a species: ‘vulnerable’ if ≤ 10 locations: ‘endangered’ if ≤ 5 locations and ‘critically endangered if a single location (IUCN Standards and Petitions Subcommittee 2014)."),
+                                                  br(),  
+                                                  selectInput("pop_number", "Number of populations:", choices = NULL),
+                                                  br(), 
+                                                  strong("*For the purposes of this decision framework, where populations total less than five, it is recommended that all sites are managed.") 
+                                                   
                                           ),
                                           
                                           tabPanel("Environmental variation"
@@ -149,24 +163,14 @@ server <- function(input, output,session) {
     return(f2)
   })
   
-  #"SOSspecies"
-  SOSsites <- eventReactive(input$SOSsitefile, {
-    req(input$SOSsitefile)
-    # read in SOS site managment shapefile  
-    sites <- tools::file_ext(input$uploadedfile)[1]#get extension
-    if(fext == "shp"){
-      sos <- shapefile(input$SOSsitefile$datapath,
-                        p4s = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
-      return(sos)
-    } 
-    #make list of species names
-    siteSP <- unique(sites@data$SciName)#vector of species names
-    # Identify species interested in
-    updateSelectInput(session, "SOSspecies", "Select management site species name:",
-                      choices = siteSP, selected="")
-  })
+  #Select managment site, species name, 
+  #****this step insures that if there is differences in the names, then they are resolved***
   
-
+  sites<-readOGR("AppEnvData/ManagmentSites/OEHManagmentSites.shp")
+  siteSP<-sort(unique(sites@data$SciName))
+  updateSelectInput(session, "SOSspecies", "Select management site species name:",
+                      choices = siteSP, selected="")
+  
   
   ######################  Map   ######################
   output$mymap<- renderLeaflet({
@@ -174,16 +178,32 @@ server <- function(input, output,session) {
     #runif(input$long_column)
     # #if(is.null(input$lat_column))return()
     #if(is.null(input$long_column))return()
+    # require(input$lat_column)
+    # require(input$long_column)
+    # 
+    #select species data
     spdat<-spData()
     spdat$lat <- spdat[, input$lat_column]
     spdat$long <- spdat[, input$long_column]
     
+    #select site data
+    #sites<-readOGR("AppEnvData/ManagmentSites/OEHManagmentSites.shp")
+    sp<-input$SOSspecies
+    SPsite <- sites[sites$SciName == sp,]
+    
     #main map
     leaflet() %>%
       addProviderTiles(input$bmap) %>%
-      addCircles(spdat$long, spdat$lat,
-                 opacity = .7,
+      #location of managment sites
+      addCircles(spdat$long, spdat$lat,#locations of species
                  fill = TRUE,
+                 radius = 10)%>%
+      addPolygons(data=SPsite, weight = 3, color = "red", fillColor = "red", opacity = 0.5)%>%
+      addCircles(spdat$long, spdat$lat,#add the points again but make them clear, this allows for popup of info
+                 fill = FALSE,
+                 color = "#00ff0001",
+                 opacity = 0.7,
+                 radius = 500,
                  popup = paste(
                    '<strong>Site:</strong>', capitalize(as.character(spdat$Descriptio)), '<br>',
                    '<strong>Accuracy (m):</strong>', spdat$Accuracy,'<br>',
@@ -214,20 +234,15 @@ server <- function(input, output,session) {
   })
   
   
- 
-  #dummy plot that uses environmental data
-  output$distPlot <- renderPlot({
-    #if(is.null(input$EnvDat))return()
-    env<-EnvDat()
-    x    <- env$rain
-    #x <- rchisq(100, df = 4)
-    bins <- seq(min(x), max(x), length.out = 10 + 1)
-    
-    hist(x, col = "#75AADB", border = "white",
-         xlab = "Waiting time to next eruption (in mins)",
-         main = "Histogram of waiting times")
-    
-  })
+  
+  ################ Population number #################
+  popNumber<-c(1:5,">5 and <10",">= 10 and < 20", ">= 20")
+  updateSelectInput(session, "pop_number", "Number of populations:", 
+                    choices = popNumber, selected="")
+  
+  
+  ################ Environmental Data ################
+  
   
   
 }
