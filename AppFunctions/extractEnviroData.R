@@ -1,9 +1,10 @@
-#function to extract environmental data and CAPAD protected areas
-
-# dat<-read.csv("/Users/daisy/GoogleDrive/Projects/OEHProtectedSpecies/RawData/SpeciesObservations/BionetRecords/obsSmall2.csv",header=TRUE)
+# #function to extract environmental data and CAPAD protected areas
+# sp<-"Astrotricha crassifolia"
+# spdat<-read.csv("/Users/daisy/repos/OEHDecisionFramework/AppEnvData/SpeciesObservations/SOSflora.csv",header=TRUE)
+# spdat<-subset(spdat,Scientific==sp)
 # 
-# lat<-dat$Latitude_G
-# long<-dat$Longitude_
+# lat<-spdat$Latitude_G
+# long<-spdat$Longitude_
 
 
 require(raster)
