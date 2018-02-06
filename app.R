@@ -2,10 +2,12 @@
 #TODO: add warning to "Environmental variation" tab - envrironmental data must be extractd first
 #TODO: change base maps names by adding ifelse function in server
 #TODO: ideally you should interactively be able to open shapefile
+#TODO: and symbol to show when data is being read in and when fetch enviro data is working
 
 options(shiny.maxRequestSize=30*1024^2)#change the maximum file size
 
 source("/Users/daisy/repos/OEHDecisionFramework/AppFunctions/extractEnviroData.R", local = T)
+source("/Users/daisy/repos/OEHDecisionFramework/AppFunctions/plotEnviroHists.R", local = T)
 
 
 library(shiny)
@@ -172,6 +174,29 @@ server <- function(input, output,session) {
                       choices = siteSP, selected="")
   
   
+  ####### Extract Environmental data and capad ################
+  EnvDat <- eventReactive(input$env, {
+    req(input$env)
+    req(input$SOSspecies)
+    spdat<-spData()
+    spdat$lat <- spdat[, input$lat_column]
+    spdat$long <- spdat[, input$long_column]
+    dat<-EnvExtract(spdat$lat,spdat$long)
+    
+    #select site data
+    coords <- dat[,c("long","lat")]
+    coordinates(coords) <-c("long","lat")
+    proj4string(coords)<-crs(sites)
+    
+    sp<-input$SOSspecies
+    managmentSite <- sites[sites$SciName == sp,]
+    dat<-cbind(dat,over(coords,managmentSite,returnList = FALSE))
+    return(dat)
+  })
+  
+  
+  
+  
   ######################  Map   ######################
   output$mymap<- renderLeaflet({
     #runif(input$lat_column)
@@ -187,7 +212,6 @@ server <- function(input, output,session) {
     spdat$long <- spdat[, input$long_column]
     
     #select site data
-    #sites<-readOGR("AppEnvData/ManagmentSites/OEHManagmentSites.shp")
     sp<-input$SOSspecies
     SPsite <- sites[sites$SciName == sp,]
     
@@ -222,27 +246,36 @@ server <- function(input, output,session) {
 
   
   
-  #Extrat Environmental data
-  EnvDat <- eventReactive(input$env, {
-    req(input$env)
-    spdat<-spData()
-    spdat$lat <- spdat[, input$lat_column]
-    spdat$long <- spdat[, input$long_column]
-    dat<-EnvExtract(spdat$Latitude_G,spdat$Longitude_)
-    
-    return(dat)
-  })
-  
-  
+   
   
   ################ Population number #################
   popNumber<-c(1:5,">5 and <10",">= 10 and < 20", ">= 20")
   updateSelectInput(session, "pop_number", "Number of populations:", 
                     choices = popNumber, selected="")
   
+  ################ Environmental variation ###########
   
-  ################ Environmental Data ################
+  # #elevation
+  #  allEl<-EnvDat$elev
+  #  subset(EnvDat,!is.na(EnvDat$SiteName))
+  # # 
   
+  output$distPlot <- renderPlot({
+    env<-EnvDat()
+    
+    # allSite<-EnvDat["elev"]
+    # sosSite<-subset(EnvDat,!is.na(EnvDat$SiteName))["elev"]
+    # 
+    # #elevation
+    # allEl<-EnvDat["elev"]
+    # subset(EnvDat,!is.na(EnvDat$SiteName))["elev"]
+    # 
+    EnvPlot(env["elev"],subset(env,!is.na(env$SiteName))["elev"])
+    
+ 
+
+    
+  })
   
   
 }
