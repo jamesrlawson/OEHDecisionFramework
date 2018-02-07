@@ -29,7 +29,7 @@ EnvExtract<-function(lat,long){
   dat$rainVar<-extract(raster("AppEnvData/rainVar.asc"),coords)
   dat$NarClimffdigt50<-extract(raster("AppEnvData/NarClimffdigt50.asc"),coords)
   dat$NarClimfRain<-extract(raster("AppEnvData/NarClimRain.asc"),coords)
-  dat$NarClimfTmax<-extract(raster("AppEnvData/NarClimRain.asc"),coords)
+  dat$NarClimfTmax<-extract(raster("AppEnvData/NarClimTmax.asc"),coords)
   return(dat)
 }
 
