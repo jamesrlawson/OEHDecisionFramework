@@ -47,8 +47,8 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                       
                                       # Show a plot of the generated distribution
                                       mainPanel(
-                                        tabsetPanel(
-                                          tabPanel("Map", 
+                                     
+                                           
                                                    
                                                    leafletOutput("mymap"),
                                                    absolutePanel(top = 45, right = 20, width = 150, draggable = TRUE,
@@ -57,66 +57,58 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                                                                          "OpenStreetMap.Mapnik"), 
                                                                              selected = "OpenStreetMap.Mapnik"))
                                                    
-                                          ),
                                           
-                                          tabPanel("Number of populations",
-                                                  #add text about determining the number of populations
-                                                  h4(strong("CRITERIA 1: NUMBER OF POPULATIONS")),
-                                                  h5("How many populations/sites should be managed to maximise likelihood of long-term viability?"),
-                                                  h5("Should all known locations of the species be managed?"),
-                                                  br(),
-                                                  strong("Populations are defined as ‘geographically or otherwise distinct groups of individuals within the same species, between which there is little demographic or genetic exchange (typically one successful migrant individual or gamete per year or less’ (NSW Scientific Committee 2014)."),
-                                                  br(),
-                                                  br(),
-                                                  p("The determination of what constitutes the optimal number of managed populations and the difference between the terms ‘effective population size’ and ‘population size’ (N) also needs to be defined. There is no general optimal number of populations. However the IUCN consider a species: ‘vulnerable’ if ≤ 10 locations: ‘endangered’ if ≤ 5 locations and ‘critically endangered if a single location (IUCN Standards and Petitions Subcommittee 2014)."),
-                                                  br(),  
-                                                  selectInput("pop_number", "Number of populations:", choices = NULL),
-                                                  br(), 
-                                                  strong("*For the purposes of this decision framework, where populations total less than five, it is recommended that all sites are managed.") 
-                                                   
-                                          ),
                                           
-                                          tabPanel("Environmental variation"
-                                                    ,
-                                                    plotOutput(outputId = "distPlot")
+                                       
                                           
-                                                   #add histograms
-                                          ),
-                                          tabPanel("Summary"
-                                                   #add text of findings and button to print out pdf
-                                          )
                                           
-                                        )
+                                        
+                                          
+                                        
                                       )
                                     )
                                     
                            ),
-                           tabPanel("Site assessment",
-                                    # Sidebar with where you load csv file and select columns 
-                                    sidebarLayout(
-                                      sidebarPanel(
-                                        
-                                      ),
-                                      
-                                      # Show a plot of the generated distribution
-                                      mainPanel(
-                                        tabsetPanel(
-                                          tabPanel("Managment sites"
-                                          ),
-                                          tabPanel("Cluster analysis"
-                                                   #add histograms
-                                          ),
-                                          tabPanel("Site summary"
-                                                   #add text of findings and button to print out pdf
-                                          )
-                                        )
-                                      )
-                                      
-                                    )
-                           )
-                           
+                          tabPanel("Number of populations",
+                                             #add text about determining the number of populations
+                                             h4(strong("CRITERIA 1: NUMBER OF POPULATIONS IN NSW")),
+                                             h5("How many populations/sites should be managed to maximise likelihood of long-term viability?"),
+                                             h5("Should all known locations of the species be managed?"),
+                                             br(),
+                                             strong("Populations are defined as ‘geographically or otherwise distinct groups of individuals within the same species, between which there is little demographic or genetic exchange (typically one successful migrant individual or gamete per year or less’ (NSW Scientific Committee 2014))."),
+                                             br(),
+                                             br(),
+                                             p("The determination of what constitutes the optimal number of managed populations and the difference between the terms ‘effective population size’ and ‘population size’ (N) also needs to be defined. There is no general optimal number of populations. However the IUCN consider a species: ‘vulnerable’ if ≤ 10 locations: ‘endangered’ if ≤ 5 locations and ‘critically endangered if a single location (IUCN Standards and Petitions Subcommittee 2014)."),
+                                             br(),  
+                                             selectInput("pop_number", "Number of populations:", choices = NULL),
+                                             br(), 
+                                             strong("*For the purposes of this decision framework, where populations total less than five, it is recommended that all sites are managed.") 
+                                             
+                                    ) # Sidebar with where you load csv file and select columns 
+                                    
+                           ,
+                        tabPanel("Environmental variation",
+                                 
+                                 plotOutput(outputId = "elevPlot")
+                        
+                        ),
+                        
+                        
+                        tabPanel("Site Selection"
+                                 #add text of findings and button to print out pdf
+                        ),
+                        
+                        
+                        tabPanel("Summary"
+                                          #add text of findings and button to print out pdf
+                                 )
+                                 
+                                 #add histograms
+                        )
                 )
-)
+                           
+                
+
 
 ########################
 
@@ -171,7 +163,7 @@ server <- function(input, output,session) {
   sites<-readOGR("AppEnvData/ManagmentSites/OEHManagmentSites.shp")
   siteSP<-sort(unique(sites@data$SciName))
   updateSelectInput(session, "SOSspecies", "Select management site species name:",
-                      choices = siteSP, selected="")
+                    choices = siteSP, selected="")
   
   
   ####### Extract Environmental data and capad ################
@@ -243,10 +235,10 @@ server <- function(input, output,session) {
                  position = "bottomleft")
     
   })
-
   
   
-   
+  
+  
   
   ################ Population number #################
   popNumber<-c(1:5,">5 and <10",">= 10 and < 20", ">= 20")
@@ -255,27 +247,12 @@ server <- function(input, output,session) {
   
   ################ Environmental variation ###########
   
-  # #elevation
-  #  allEl<-EnvDat$elev
-  #  subset(EnvDat,!is.na(EnvDat$SiteName))
-  # # 
-  
-  output$distPlot <- renderPlot({
+  output$elevPlot <- renderPlot({
     env<-EnvDat()
-    
-    # allSite<-EnvDat["elev"]
-    # sosSite<-subset(EnvDat,!is.na(EnvDat$SiteName))["elev"]
-    # 
-    # #elevation
-    # allEl<-EnvDat["elev"]
-    # subset(EnvDat,!is.na(EnvDat$SiteName))["elev"]
-    # 
     EnvPlot(env["elev"],subset(env,!is.na(env$SiteName))["elev"])
-    
- 
-
-    
   })
+  
+  
   
   
 }

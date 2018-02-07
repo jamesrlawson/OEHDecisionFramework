@@ -1,3 +1,4 @@
+
 # #function to extract environmental data and CAPAD protected areas
 # sp<-"Astrotricha crassifolia"
 # spdat<-read.csv("/Users/daisy/repos/OEHDecisionFramework/AppEnvData/SpeciesObservations/SOSflora.csv",header=TRUE)
@@ -32,5 +33,3 @@ EnvExtract<-function(lat,long){
   dat$NarClimfTmax<-extract(raster("AppEnvData/NarClimTmax.asc"),coords)
   return(dat)
 }
-
-
