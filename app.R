@@ -1,7 +1,8 @@
 #TODO: fix error in mapping area when app first opened - lat and longs are not defined
 #TODO: add warning to "Environmental variation" tab - envrironmental data must be extractd first
-#TODO: change base maps names by adding ifelse function in server
-#TODO: ideally you should interactively be able to open shapefile
+#TODO: ideally you should interactively be able to open shapefile, 
+        #this does not seem to be possible in shiny at this time
+        #SOS managment site files sits in folder in same location as app, this must be maintained for app to work
 #TODO: and symbol to show when data is being read in and when fetch enviro data is working
 
 options(shiny.maxRequestSize=30*1024^2)#change the maximum file size
@@ -45,69 +46,68 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                         
                                       ),
                                       
-                                      # Show a plot of the generated distribution
+                                      # Show a plot of the observations
                                       mainPanel(
-                                     
-                                           
-                                                   
-                                                   leafletOutput("mymap"),
-                                                   absolutePanel(top = 45, right = 20, width = 150, draggable = TRUE,
-                                                                 selectInput("bmap", "Select base map", 
-                                                                             choices = c("Esri.WorldImagery",
-                                                                                         "OpenStreetMap.Mapnik"), 
-                                                                             selected = "OpenStreetMap.Mapnik"))
-                                                   
-                                          
-                                          
-                                       
-                                          
-                                          
+                                        leafletOutput("mymap"),
+                                        absolutePanel(top = 45, right = 20, width = 150, draggable = TRUE,
+                                                      selectInput("bmap", "Select base map", 
+                                                                  choices =  c("Base map",
+                                                                               "Satellite imagery"), 
+                                                                  selected = "Base map")),
                                         
+                                         
+                                          h3(strong(div(textOutput("sp_warning"), style="color:red"))),
+                                          h4(strong("The species you have selected is:")),
+                                          h4(strong(em(textOutput("selected_sp")))),
                                           
+                                         textOutput("obs_number")
+                                        # textOutput("nsw_sites")
+                                    
                                         
                                       )
                                     )
                                     
                            ),
-                          tabPanel("Number of populations",
-                                             #add text about determining the number of populations
-                                             h4(strong("CRITERIA 1: NUMBER OF POPULATIONS IN NSW")),
-                                             h5("How many populations/sites should be managed to maximise likelihood of long-term viability?"),
-                                             h5("Should all known locations of the species be managed?"),
-                                             br(),
-                                             strong("Populations are defined as ‘geographically or otherwise distinct groups of individuals within the same species, between which there is little demographic or genetic exchange (typically one successful migrant individual or gamete per year or less’ (NSW Scientific Committee 2014))."),
-                                             br(),
-                                             br(),
-                                             p("The determination of what constitutes the optimal number of managed populations and the difference between the terms ‘effective population size’ and ‘population size’ (N) also needs to be defined. There is no general optimal number of populations. However the IUCN consider a species: ‘vulnerable’ if ≤ 10 locations: ‘endangered’ if ≤ 5 locations and ‘critically endangered if a single location (IUCN Standards and Petitions Subcommittee 2014)."),
-                                             br(),  
-                                             selectInput("pop_number", "Number of populations:", choices = NULL),
-                                             br(), 
-                                             strong("*For the purposes of this decision framework, where populations total less than five, it is recommended that all sites are managed.") 
-                                             
-                                    ) # Sidebar with where you load csv file and select columns 
+                           tabPanel("Number of populations",
+                                    #add text about determining the number of populations
+                                    h4(strong("CRITERIA 1: NUMBER OF POPULATIONS IN NSW")),
+                                    h5("How many populations/sites should be managed to maximise likelihood of long-term viability?"),
+                                    h5("Should all known locations of the species be managed?"),
+                                    br(),
+                                    strong("Populations are defined as ‘geographically or otherwise distinct groups of individuals within the same species, between which there is little demographic or genetic exchange (typically one successful migrant individual or gamete per year or less’ (NSW Scientific Committee 2014))."),
+                                    br(),
+                                    br(),
+                                    p("The determination of what constitutes the optimal number of managed populations and the difference between the terms ‘effective population size’ and ‘population size’ (N) also needs to be defined. There is no general optimal number of populations. However the IUCN consider a species: ‘vulnerable’ if ≤ 10 locations: ‘endangered’ if ≤ 5 locations and ‘critically endangered if a single location (IUCN Standards and Petitions Subcommittee 2014)."),
+                                    br(),  
+                                    selectInput("pop_number", "Number of populations:", choices = NULL),
+                                    br(), 
+                                    strong("*For the purposes of this decision framework, where populations total less than five, it is recommended that all sites are managed.") 
                                     
-                           ,
-                        tabPanel("Environmental variation",
-                                 
-                                 plotOutput(outputId = "elevPlot")
-                        
-                        ),
-                        
-                        
-                        tabPanel("Site Selection"
-                                 #add text of findings and button to print out pdf
-                        ),
-                        
-                        
-                        tabPanel("Summary"
-                                          #add text of findings and button to print out pdf
-                                 )
-                                 
-                                 #add histograms
-                        )
-                )
+                           ) # Sidebar with where you load csv file and select columns 
                            
-                
+                           ,
+                           tabPanel("Environmental variation",
+                                    
+                                    plotOutput(outputId = "elevPlot"),
+                                    plotOutput(outputId = "tempPlot")
+                                    
+                           ),
+                           
+                           
+                           tabPanel("Site Selection"
+                                    #add text of findings and button to print out pdf
+                           ),
+                           
+                           
+                           tabPanel("Summary"
+                                    #add text of findings and button to print out pdf
+                           )
+                           
+                           #add histograms
+                )
+)
+
+
 
 
 ########################
@@ -186,6 +186,36 @@ server <- function(input, output,session) {
     return(dat)
   })
   
+  ############ data selection summary
+  
+  
+  output$selected_sp <- renderText({
+    req(input$species)
+    input$species
+  })
+  
+  output$sp_warning <- renderText({
+    req(input$species)
+    req(input$SOSspecies)
+    if(grepl(input$species,input$SOSspecies) != TRUE) {
+      "Species selected and management site species do not match"
+    }
+  })
+  
+  output$obs_number <- renderText({
+    req(input$env)
+    req(input$SOSspecies)
+    Env<-EnvDat()
+    obsCount<-nrow(Env)
+    sosCount<-nrow(subset(Env,!is.na(Env$SiteName)))
+    sosPer<-round(sosCount/obsCount*100,2)
+    paste0("The total number of observations is ",
+           obsCount,
+           " and ",
+           sosPer, 
+           "% of observations are within managent sites," )
+    
+  })
   
   
   
@@ -203,13 +233,23 @@ server <- function(input, output,session) {
     spdat$lat <- spdat[, input$lat_column]
     spdat$long <- spdat[, input$long_column]
     
+    #get base map name
+    
+    if(input$bmap== "Base map"){
+      mapType<-"OpenStreetMap.Mapnik"
+    }
+    if(input$bmap== "Satellite imagery"){
+      mapType<-"Esri.WorldImagery"
+    }
+    
+    
     #select site data
     sp<-input$SOSspecies
     SPsite <- sites[sites$SciName == sp,]
     
     #main map
     leaflet() %>%
-      addProviderTiles(input$bmap) %>%
+      addProviderTiles(mapType) %>%
       #location of managment sites
       addCircles(spdat$long, spdat$lat,#locations of species
                  fill = TRUE,
@@ -248,10 +288,15 @@ server <- function(input, output,session) {
   ################ Environmental variation ###########
   
   output$elevPlot <- renderPlot({
-    env<-EnvDat()
-    EnvPlot(env["elev"],subset(env,!is.na(env$SiteName))["elev"])
+    Env<-EnvDat()
+    EnvPlot(Env["elev"],subset(Env,!is.na(Env$SiteName))["elev"])
   })
   
+  output$tempPlot <- renderPlot({
+    Env<-EnvDat()
+    EnvPlot(Env["tmax"],subset(Env,!is.na(Env$SiteName))["tmax"])
+  })
+
   
   
   
