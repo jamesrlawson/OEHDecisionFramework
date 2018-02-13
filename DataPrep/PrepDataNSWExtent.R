@@ -35,7 +35,7 @@ rain<-raster("/Users/daisy/GoogleDrive/Projects/OEHProtectedSpecies/RawData/Envi
 rain<-crop(rain,e)
 writeRaster(rain,"AppEnvData/rain.asc",overwrite=TRUE)
 
-tmax<-raster("/Users/daisy/GoogleDrive/Projects/OEHProtectedSpecies/RawData/EnvironmentalData/climate/anPrec1961-1990.txt",
+tmax<-raster("/Users/daisy/GoogleDrive/Projects/OEHProtectedSpecies/RawData/EnvironmentalData/climate/mTmax1961-1990.txt",
             crs=paste(P4S))
 
 tmax<-crop(tmax,e)
