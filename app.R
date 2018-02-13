@@ -1,14 +1,18 @@
-#TODO: fix error in mapping area when app first opened - lat and longs are not defined
-#TODO: add warning to "Environmental variation" tab - envrironmental data must be extractd first
+
+#TODO: add warning to "Environmental variation" tab - envrironmental data must be extractd first - m
+      #make check that species name in environmental data matches the extracted data  - the environmental data has to go away if the species name or managment species name is changed
+
 #TODO: ideally you should interactively be able to open shapefile, 
         #this does not seem to be possible in shiny at this time
         #SOS managment site files sits in folder in same location as app, this must be maintained for app to work
 #TODO: and symbol to show when data is being read in and when fetch enviro data is working
-
+#TODO: make population warning pop up when there are too few populations"*For the purposes of this decision framework, where populations total less than five, it is recommended that all sites are managed."
+#TODO make rainfall variability stacked data
+#TODO: clip data to NSW extents?
 options(shiny.maxRequestSize=30*1024^2)#change the maximum file size
 
-source("/Users/daisy/repos/OEHDecisionFramework/AppFunctions/extractEnviroData.R", local = T)
-source("/Users/daisy/repos/OEHDecisionFramework/AppFunctions/plotEnviroHists.R", local = T)
+source("AppFunctions/extractEnviroData.R", local = T)
+source("AppFunctions/plotEnviroHists.R", local = T)
 
 
 library(shiny)
@@ -88,8 +92,10 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                            ,
                            tabPanel("Environmental variation",
                                     
-                                    plotOutput(outputId = "elevPlot"),
-                                    plotOutput(outputId = "tempPlot")
+                                    plotOutput(outputId = "currentPlot",height = "600px"),
+                                    plotOutput(outputId = "futurePlot",height = "300px")
+                                  
+                                   
                                     
                            ),
                            
@@ -213,7 +219,7 @@ server <- function(input, output,session) {
            obsCount,
            " and ",
            sosPer, 
-           "% of observations are within managent sites," )
+           "% of observations are within managent sites." )
     
   })
   
@@ -287,15 +293,16 @@ server <- function(input, output,session) {
   
   ################ Environmental variation ###########
   
-  output$elevPlot <- renderPlot({
+  output$currentPlot <- renderPlot({
     Env<-EnvDat()
-    EnvPlot(Env["elev"],subset(Env,!is.na(Env$SiteName))["elev"])
+    CurClimPlot(Env,subset(Env,!is.na(Env$SiteName)))
   })
   
-  output$tempPlot <- renderPlot({
+  output$futurePlot <- renderPlot({
     Env<-EnvDat()
-    EnvPlot(Env["tmax"],subset(Env,!is.na(Env$SiteName))["tmax"])
+    futClimPlot(Env,subset(Env,!is.na(Env$SiteName)))
   })
+  
 
   
   
