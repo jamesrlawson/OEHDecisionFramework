@@ -79,7 +79,7 @@ writeRaster(FTmax,"AppEnvData/NarClimTmax.asc",overwrite=TRUE)
   
 FFire<-raster("/Users/daisy/GoogleDrive/Projects/OEHProtectedSpecies/RawData/MultiModelMean_NARCLiM Domain_All Epochs_All Variables_Annual and Seasonal/6c3cb0199634_d02_multimodel_mean_chg_2060_2079_ffdigt50_ndays_ann.asc")#change increase in ndays
 
-writeRaster(FTmax,"AppEnvData/NarClimffdigt50.asc",overwrite=TRUE)
+writeRaster(FFire,"AppEnvData/NarClimffdigt50.asc",overwrite=TRUE)
 
 
 #################
