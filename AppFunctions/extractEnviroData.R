@@ -1,5 +1,5 @@
-
-# #function to extract environmental data and CAPAD protected areas
+# 
+# # #function to extract environmental data and CAPAD protected areas
 # sp<-"Astrotricha crassifolia"
 # spdat<-read.csv("/Users/daisy/repos/OEHDecisionFramework/AppEnvData/SpeciesObservations/SOSflora.csv",header=TRUE)
 # spdat<-subset(spdat,Scientific==sp)

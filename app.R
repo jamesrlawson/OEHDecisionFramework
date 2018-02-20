@@ -91,16 +91,21 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                            
                            ,
                            tabPanel("Environmental variation",
-                                    
+                                    h4(strong("Current environmental conditions"),
                                     plotOutput(outputId = "currentPlot",height = "600px"),
+                                    br(),
+                                    h4(strong("Future climatic conditions"),
                                     plotOutput(outputId = "futurePlot",height = "300px")
                                   
-                                   
-                                    
+                                    )  
+                                    )  
                            ),
                            
                            
                            tabPanel("Site Selection"
+                                    
+                                    
+                                    
                                     #add text of findings and button to print out pdf
                            ),
                            
