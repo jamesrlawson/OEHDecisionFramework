@@ -102,11 +102,23 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                            ),
                            
                            
-                           tabPanel("Site Selection"
+                           tabPanel("Site Selection",
                                     
+                                    sidebarLayout(
+                                      sidebarPanel(
+                                        selectInput("tmax", "Avg. annual Tmax", choices = NULL),
+                                        selectInput("rain", "Avg. annual rainfall", choices = NULL),
+                                        selectInput("rainVar", "Avg. annual rainfall variability", choices = NULL), 
+                                        selectInput("elev", "Elevation", choices = NULL),
+                                        selectInput("soils", "Soil type", 
+                                                    choices=NULL),
+                                        actionButton("clust", "Press for cluster analysis")
+                                      ),
+                                        
+                                      mainPanel( 
+                                           )
+                                    )
                                     
-                                    
-                                    #add text of findings and button to print out pdf
                            ),
                            
                            
@@ -309,8 +321,33 @@ server <- function(input, output,session) {
   })
   
 
-  
-  
+  ################ Site Selection ###########
+  #turn on and off inputs
+  observeEvent(input$tmax, {
+    updateSelectInput(session, "tmax", "Avg. annual Tmax",
+                      choices = c("yes", "no"), selected="")
+  })
+
+  observeEvent(input$rain, {
+  updateSelectInput(session, "rain", "Avg. annual rainfall",
+                    choices = c("yes", "no"), selected="")
+  })
+
+  observeEvent(input$rainVar, {
+  updateSelectInput(session, "rainVar", "Avg. annual rainfall variability",
+                    choices = c("yes", "no"), selected="")
+  })
+
+  observeEvent(input$elev, {
+  updateSelectInput(session, "elev", "Elevation",
+                    choices = c("yes", "no"), selected="")
+  })
+
+  observeEvent(input$soils, {
+  updateSelectInput(session, "soils", "Soil type",
+                    choices = c("yes", "no"), selected="")
+  })
+
   
 }
 
