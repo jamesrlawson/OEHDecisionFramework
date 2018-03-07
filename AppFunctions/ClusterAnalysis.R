@@ -6,7 +6,7 @@
 #observation is to its own cluster compared its closest neighboring cluster. The metric can range from
 #-1 to 1, where higher values are better.
 
-#get test data
+# #get test data
 # library(rgdal)
 # 
 # source("AppFunctions/extractEnviroData.R", local = T)
@@ -26,7 +26,7 @@
 # #require(Rtsne) # for t-SNE plot
 # #require(ggplot2) # for visualization
 # variablesUSE <- c("soil", "elev", "rain", "tmax", "rainVar")
-#clusters<-4
+# #clusters<-4
 
 EnvCluserData <- function(Env, variablesUSE,clusters) {
   # get data that is needed
@@ -86,7 +86,7 @@ ClusterNumbers <- function(Env, variablesUSE) {
   sil_dat <- data.frame(cbind(sil_width, 2:10))
   sil_dat<-sil_dat[order(sil_width,decreasing = TRUE),] #order them so best performers are first in dataframe
 
-  return(sil_dat)
+  return(sil_dat$V2[1:3])
   
 }
   
