@@ -111,12 +111,20 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                         selectInput("rainVar", "Avg. annual rainfall variability", c("yes","no")), 
                                         selectInput("elev", "Elevation", c("yes","no")),
                                         selectInput("soils", "Soil type", c("yes","no")),
-                                        numericInput('clusters', 'Cluster count',3,
+                                        numericInput('clusters', 'Cluster count',2,
                                                      min = 2, max = 9)
                                       ),
                                         
                                       mainPanel( 
-                                        plotOutput('ClusterPlot')
+                                        
+                                        
+                                        #A variety of metrics exist to help choose the number of clusters to be extracted in a cluster analysis.
+                                        #We use silhouette width, an internal validation metric which is an aggregated measure of how similar an
+                                        #observation is to its own cluster compared its closest neighboring cluster. The metric can range from
+                                        #-1 to 1, where higher values are better.
+                                          
+                                          h4(strong(em(textOutput("clusters")))),
+                                           plotOutput('ClusterPlot')
                                            )
                                     )
                                     
@@ -340,24 +348,48 @@ server <- function(input, output,session) {
     fn <- function(x){
       if(x == "yes")as.character(substitute(x))
     }
-    #subset the data
-  variablesUSE <- reactive({
-    tmax<-input$tmax
-    rain<-input$rain
-    rainVar<-input$rainVar
-    elev<-input$elev
-    soils<-input$soils
-   
-     vars<-c(fn(tmax), fn(rain),fn(rainVar), fn(elev),fn(soils))
-     
+    #make a vector of environmental variables to use
+    variablesUSE <- reactive({
+      tmax<-input$tmax
+      rain<-input$rain
+      rainVar<-input$rainVar
+      elev<-input$elev
+      soils<-input$soils
+      vars<-c(fn(tmax), fn(rain),fn(rainVar), fn(elev),fn(soils))
       return(vars)
     })
-    #  #run the cluster
-    #  clusters <- reactive({
-    #    CDat<-clusterData()
-    #    EnvCluser(CDat, names(CDat))
-    # })
-    #  
+    
+    # Reactive expression for determining best number of clusters
+    clusters<-reactive({
+      vars<-variablesUSE()
+      Env<-EnvDat()
+      clusters<-ClusterNumbers(Env, vars)
+      return(clusters)
+    })
+    
+    
+ 
+    #A variety of metrics exist to help choose the number of clusters to be extracted in a cluster analysis.
+    #We use silhouette width, an internal validation metric which is an aggregated measure of how similar an
+    #observation is to its own cluster compared its closest neighboring cluster. The metric can range from
+    #-1 to 1, where higher values are better.
+    output$clusters <- renderText({
+      #req(input$EnvDat)
+      #req(input$clusters)
+      #Env<-EnvDat()
+      clusters<-clusters()
+      #variablesUSE<-variablesUSE()
+      #clusters<-ClusterNumbers(Env, variablesUSE)
+      paste0("The best three suggested numbers of clusters,",
+             " based on a measure of how similar each observation is to",  
+             " its own cluster compared its closest neighboring cluster, are ",
+             clusters[1], ", ", clusters[2],
+             ", and ",
+             clusters[3], 
+             "." )
+    })
+    
+
   
 }
 
