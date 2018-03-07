@@ -36,13 +36,13 @@ EnvExtract<-function(lat,long){
   dat$NarClimfTmax<-extract(raster("AppEnvData/NarClimTmax.asc"),coords)
   
   #reclassify rainfall variability - ranges defined on BOM website
-  dat$NewRainVar[dat$rainVar > 0 & dat$rainVar <= 0.5] <- "Low"
-  dat$NewRainVar[dat$rainVar > 0.5 & dat$rainVar <= 0.75] <- "Low to mod"
-  dat$NewRainVar[dat$rainVar > 0.75 & dat$rainVar <= 1] <- "Mod"
-  dat$NewRainVar[dat$rainVar > 1 & dat$rainVar <= 1.25] <- "Mod to high"
-  dat$NewRainVar[dat$rainVar > 1.25 & dat$rainVar <= 1.5] <- "High"
-  dat$NewRainVar[dat$rainVar > 1.5 & dat$rainVar <= 2] <- "Very high"
-  dat$NewRainVar[dat$rainVar > 2 ] <- "Extreme"
+  dat$rainVar[dat$rainVar > 0 & dat$rainVar <= 0.5] <- "Low"
+  dat$rainVar[dat$rainVar > 0.5 & dat$rainVar <= 0.75] <- "Low to mod"
+  dat$rainVar[dat$rainVar > 0.75 & dat$rainVar <= 1] <- "Mod"
+  dat$rainVar[dat$rainVar > 1 & dat$rainVar <= 1.25] <- "Mod to high"
+  dat$rainVar[dat$rainVar > 1.25 & dat$rainVar <= 1.5] <- "High"
+  dat$rainVar[dat$rainVar > 1.5 & dat$rainVar <= 2] <- "Very high"
+  dat$rainVar[dat$rainVar > 2 ] <- "Extreme"
   
   return(dat)
 }
