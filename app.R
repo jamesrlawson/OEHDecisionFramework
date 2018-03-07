@@ -7,12 +7,12 @@
         #SOS managment site files sits in folder in same location as app, this must be maintained for app to work
 #TODO: and symbol to show when data is being read in and when fetch enviro data is working
 #TODO: make population warning pop up when there are too few populations"*For the purposes of this decision framework, where populations total less than five, it is recommended that all sites are managed."
-#TODO make rainfall variability stacked data
 #TODO: clip data to NSW extents?
 options(shiny.maxRequestSize=30*1024^2)#change the maximum file size
 
 source("AppFunctions/extractEnviroData.R", local = T)
 source("AppFunctions/plotEnviroHists.R", local = T)
+source("AppFunctions/ClusterAnalysis.R", local = T)
 
 
 library(shiny)
@@ -30,7 +30,7 @@ library(maptools)
 ui <- fluidPage(theme = shinytheme("cosmo"),
                 titlePanel("SOS site selection tool"),
                 navbarPage(title="",
-                           tabPanel("Observations",
+                           tabPanel("1. Observations",
                                     # Sidebar with where you load csv file and select columns 
                                     sidebarLayout(
                                       sidebarPanel(
@@ -72,7 +72,7 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                     )
                                     
                            ),
-                           tabPanel("Number of populations",
+                           tabPanel("2. Number of populations",
                                     #add text about determining the number of populations
                                     h4(strong("CRITERIA 1: NUMBER OF POPULATIONS IN NSW")),
                                     h5("How many populations/sites should be managed to maximise likelihood of long-term viability?"),
@@ -90,7 +90,7 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                            ) # Sidebar with where you load csv file and select columns 
                            
                            ,
-                           tabPanel("Environmental variation",
+                           tabPanel("3. Environmental variation",
                                     h4(strong("Current environmental conditions"),
                                     plotOutput(outputId = "currentPlot",height = "600px"),
                                     br(),
@@ -102,27 +102,28 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                            ),
                            
                            
-                           tabPanel("Site Selection",
+                           tabPanel("4. Site Selection",
                                     
                                     sidebarLayout(
                                       sidebarPanel(
-                                        selectInput("tmax", "Avg. annual Tmax", choices = NULL),
-                                        selectInput("rain", "Avg. annual rainfall", choices = NULL),
-                                        selectInput("rainVar", "Avg. annual rainfall variability", choices = NULL), 
-                                        selectInput("elev", "Elevation", choices = NULL),
-                                        selectInput("soils", "Soil type", 
-                                                    choices=NULL),
-                                        actionButton("clust", "Press for cluster analysis")
+                                        selectInput("tmax", "Avg. annual Tmax", c("yes","no")),
+                                        selectInput("rain", "Avg. annual rainfall", c("yes","no")),
+                                        selectInput("rainVar", "Avg. annual rainfall variability", c("yes","no")), 
+                                        selectInput("elev", "Elevation", c("yes","no")),
+                                        selectInput("soils", "Soil type", c("yes","no")),
+                                        numericInput('clusters', 'Cluster count',3,
+                                                     min = 2, max = 9)
                                       ),
                                         
                                       mainPanel( 
+                                        plotOutput('ClusterPlot')
                                            )
                                     )
                                     
                            ),
                            
                            
-                           tabPanel("Summary"
+                           tabPanel("5. Summary"
                                     #add text of findings and button to print out pdf
                            )
                            
@@ -138,6 +139,8 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
 # define where data is and what columns to use
 
 server <- function(input, output,session) {
+  
+############ 1. Observations ###############  
   
   info <- eventReactive(input$uploadedfile, {
     req(input$uploadedfile)
@@ -181,42 +184,13 @@ server <- function(input, output,session) {
   })
   
   #Select managment site, species name, 
-  #****this step insures that if there is differences in the names, then they are resolved***
-  
   sites<-readOGR("AppEnvData/ManagmentSites/OEHManagmentSites.shp")
   siteSP<-sort(unique(sites@data$SciName))
   updateSelectInput(session, "SOSspecies", "Select management site species name:",
                     choices = siteSP, selected="")
   
   
-  ####### Extract Environmental data and capad ################
-  EnvDat <- eventReactive(input$env, {
-    req(input$env)
-    req(input$SOSspecies)
-    spdat<-spData()
-    spdat$lat <- spdat[, input$lat_column]
-    spdat$long <- spdat[, input$long_column]
-    dat<-EnvExtract(spdat$lat,spdat$long)
-    
-    #select site data
-    coords <- dat[,c("long","lat")]
-    coordinates(coords) <-c("long","lat")
-    proj4string(coords)<-crs(sites)
-    
-    sp<-input$SOSspecies
-    managmentSite <- sites[sites$SciName == sp,]
-    dat<-cbind(dat,over(coords,managmentSite,returnList = FALSE))
-    return(dat)
-  })
-  
-  ############ data selection summary
-  
-  
-  output$selected_sp <- renderText({
-    req(input$species)
-    input$species
-  })
-  
+  #Error text if species observations and Managment sites species do not match
   output$sp_warning <- renderText({
     req(input$species)
     req(input$SOSspecies)
@@ -225,6 +199,13 @@ server <- function(input, output,session) {
     }
   })
   
+  #get species name that has been selected to use in description
+  output$selected_sp <- renderText({
+    req(input$species)
+    input$species
+  })
+  
+  #summary text
   output$obs_number <- renderText({
     req(input$env)
     req(input$SOSspecies)
@@ -236,13 +217,11 @@ server <- function(input, output,session) {
            obsCount,
            " and ",
            sosPer, 
-           "% of observations are within managent sites." )
+           "% of observations are within management sites." )
     
   })
   
-  
-  
-  ######################  Map   ######################
+#  Map of observations  
   output$mymap<- renderLeaflet({
     #runif(input$lat_column)
     #runif(input$long_column)
@@ -303,16 +282,44 @@ server <- function(input, output,session) {
   
   
   
-  ################ Population number #################
-  popNumber<-c(1:5,">5 and <10",">= 10 and < 20", ">= 20")
+  ################ 2. Population number #################
+  popNumber<-c("< 5", ">5 and <10",">= 10 and < 20", ">= 20")
   updateSelectInput(session, "pop_number", "Number of populations:", 
                     choices = popNumber, selected="")
   
-  ################ Environmental variation ###########
   
+  
+  
+  
+  
+  
+  
+  ################ 3. Environmental variation ###########
+  
+  # Extract Environmental data and capad 
+  EnvDat <- eventReactive(input$env, {
+    req(input$env)
+    req(input$SOSspecies)
+    spdat<-spData()
+    spdat$lat <- spdat[, input$lat_column]
+    spdat$long <- spdat[, input$long_column]
+    dat<-EnvExtract(spdat$lat,spdat$long)
+    
+    #select site data
+    coords <- dat[,c("long","lat")]
+    coordinates(coords) <-c("long","lat")
+    proj4string(coords)<-crs(sites)
+    
+    sp<-input$SOSspecies
+    managmentSite <- sites[sites$SciName == sp,]
+    dat<-cbind(dat,over(coords,managmentSite,returnList = FALSE))
+    return(dat)
+  })
+  
+  #plots of Environmental data - code for function is in "AppFunctions/plotEnviroHists.R")
   output$currentPlot <- renderPlot({
     Env<-EnvDat()
-    CurClimPlot(Env,subset(Env,!is.na(Env$SiteName)))
+    CurClimPlot(Env,subset(Env,!is.na(Env$SiteName))) 
   })
   
   output$futurePlot <- renderPlot({
@@ -321,33 +328,36 @@ server <- function(input, output,session) {
   })
   
 
-  ################ Site Selection ###########
-  #turn on and off inputs
-  observeEvent(input$tmax, {
-    updateSelectInput(session, "tmax", "Avg. annual Tmax",
-                      choices = c("yes", "no"), selected="")
-  })
+  
+  
+  
+  
+  ################ 4.Site Selection ###########
 
-  observeEvent(input$rain, {
-  updateSelectInput(session, "rain", "Avg. annual rainfall",
-                    choices = c("yes", "no"), selected="")
-  })
-
-  observeEvent(input$rainVar, {
-  updateSelectInput(session, "rainVar", "Avg. annual rainfall variability",
-                    choices = c("yes", "no"), selected="")
-  })
-
-  observeEvent(input$elev, {
-  updateSelectInput(session, "elev", "Elevation",
-                    choices = c("yes", "no"), selected="")
-  })
-
-  observeEvent(input$soils, {
-  updateSelectInput(session, "soils", "Soil type",
-                    choices = c("yes", "no"), selected="")
-  })
-
+  
+  #get the data ready for cluster analysis
+    #function for subsetting based on yes and no values user adds
+    fn <- function(x){
+      if(x == "yes")as.character(substitute(x))
+    }
+    #subset the data
+  variablesUSE <- reactive({
+    tmax<-input$tmax
+    rain<-input$rain
+    rainVar<-input$rainVar
+    elev<-input$elev
+    soils<-input$soils
+   
+     vars<-c(fn(tmax), fn(rain),fn(rainVar), fn(elev),fn(soils))
+     
+      return(vars)
+    })
+    #  #run the cluster
+    #  clusters <- reactive({
+    #    CDat<-clusterData()
+    #    EnvCluser(CDat, names(CDat))
+    # })
+    #  
   
 }
 
