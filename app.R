@@ -354,16 +354,16 @@ server <- function(input, output,session) {
       rain<-input$rain
       rainVar<-input$rainVar
       elev<-input$elev
-      soils<-input$soils
-      vars<-c(fn(tmax), fn(rain),fn(rainVar), fn(elev),fn(soils))
+      soil<-input$soils
+      vars<-c(fn(tmax), fn(rain),fn(rainVar), fn(elev),fn(soil))
       return(vars)
     })
     
     # Reactive expression for determining best number of clusters
-    clusters<-reactive({
+    clustersNumbers<-reactive({
       vars<-variablesUSE()
       Env<-EnvDat()
-      clusters<-ClusterNumbers(Env, vars)
+      clusters<-ClusterNumbers(EnvDat, variablesUSE)
       return(clusters)
     })
     
@@ -377,7 +377,7 @@ server <- function(input, output,session) {
       #req(input$EnvDat)
       #req(input$clusters)
       #Env<-EnvDat()
-      clusters<-clusters()
+      clusters<-clustersNumbers()
       #variablesUSE<-variablesUSE()
       #clusters<-ClusterNumbers(Env, variablesUSE)
       paste0("The best three suggested numbers of clusters,",
