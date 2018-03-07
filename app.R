@@ -382,7 +382,7 @@ server <- function(input, output,session) {
       #clusters<-ClusterNumbers(Env, variablesUSE)
       paste0("The best three suggested numbers of clusters,",
              " based on a measure of how similar each observation is to",  
-             " its own cluster compared its closest neighboring cluster, are ",
+             " its own cluster compared its closest neighbouring cluster, are ",
              clusters[1], ", ", clusters[2],
              ", and ",
              clusters[3], 
