@@ -1,7 +1,7 @@
 #make histograms of environmental data
 #TODO: CHECK that code works when there are no SOS sites, plotting still works
 
-# ##Test data
+##Test data
 # library(rgdal)
 # source("AppFunctions/extractEnviroData.R", local = T)
 # sp<-"Acacia acanthoclada"
@@ -23,9 +23,9 @@
 # 
 # allSite<-dat
 # sosSite<-subset(dat,!is.na(dat$SiteName))
-# 
-# 
-# 
+
+
+
 
 
 source("AppFunctions/MultiplotLayout.R", local = T)
@@ -41,7 +41,8 @@ CurClimPlot<-function(allSite,sosSite){
   sosSite$loc <- "sos"
   allDat <- rbind(allSite, sosSite)
 
-  ###tmax  
+  
+###tmax  
 
   
   p1<-ggplot(allDat, aes(x=tmax, fill = loc))+
@@ -72,7 +73,7 @@ CurClimPlot<-function(allSite,sosSite){
   #rainfall variability
   
   p3<-ggplot(allDat, aes( fill = loc))+
-    geom_bar( aes(NewRainVar), colour="black") +
+    geom_bar( aes(rainVar), colour="black") +
     theme(panel.grid.major = element_blank(), 
           panel.grid.minor = element_blank(),
           panel.background = element_blank(),
@@ -112,18 +113,18 @@ CurClimPlot<-function(allSite,sosSite){
         ggtitle("Soil type")+
         labs(x="",y="Count")
   
-  #legend only
-  p6a<-ggplot(allDat, aes(x=rainVar, fill = loc))+
-    #geom_density(alpha = 0.5)+
-    geom_histogram(binwidth=.1, position="identity",breaks=c(0,.5,.75,1,1.25,1.5,2,3))+
-    theme(panel.grid.major = element_blank(), 
-          panel.grid.minor = element_blank(),
-          panel.background = element_blank(), 
-          axis.line = element_line(colour = "black"))+
-    scale_fill_manual( labels = c("All locations", "Mngm. sites"), values=c("#999999", "#E69F00"))+
-    ggtitle("Avg. annual rainfall variability")+
-    labs(x="Index of variability")
-  legend<-g_legend(p6a)
+  # #legend only
+  # p6a<-ggplot(allDat, aes(x=rainVar, fill = loc))+
+  #   #geom_density(alpha = 0.5)+
+  #   geom_histogram(binwidth=.1, position="identity",breaks=c(0,.5,.75,1,1.25,1.5,2,3))+
+  #   theme(panel.grid.major = element_blank(), 
+  #         panel.grid.minor = element_blank(),
+  #         panel.background = element_blank(), 
+  #         axis.line = element_line(colour = "black"))+
+  #   scale_fill_manual( labels = c("All locations", "Mngm. sites"), values=c("#999999", "#E69F00"))+
+  #   ggtitle("Avg. annual rainfall variability")+
+  #   labs(x="Index of variability")
+  # legend<-g_legend(p6a)
   
   
   return(multiplot(p1, p4, p2, p5, p3,legend,cols=3))
