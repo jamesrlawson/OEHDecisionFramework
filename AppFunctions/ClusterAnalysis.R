@@ -39,17 +39,6 @@ EnvCluserData <- function(Env, variablesUSE,clusters) {
   # #define (dis)similarity between observations
   gower_dist <- daisy(datCluster,
                       metric = "gower")
-
-  # #determine suggested number of clusters
-  # sil_width <- c(NA)
-  # for (i in 2:10) {
-  #   pam_fit <- pam(gower_dist,
-  #                  diss = TRUE,
-  #                  k = i)
-  #   sil_width[i] <- pam_fit$silinfo$avg.width
-  # }
-  # sil_dat <- na.omit(data.frame(cbind(sil_width, 1:10)))
-  # C1 <- subset(sil_dat, sil_width == max(sil_dat$sil_width))$V2
   
   #cluster analysis
   pam_fit <- pam(gower_dist, diss = TRUE, k = clusters)
