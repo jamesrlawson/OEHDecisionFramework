@@ -23,8 +23,8 @@
 # 
 # 
 require(cluster) # for gower similarity and pam
-require(Rtsne) # for t-SNE plot
-require(ggplot2) # for visualization
+#require(Rtsne) # for t-SNE plot
+#require(ggplot2) # for visualization
 # variablesUSE <- c("soil", "elev", "rain", "tmax", "rainVar")
 # #clusters<-4
 
