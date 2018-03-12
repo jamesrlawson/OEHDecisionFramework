@@ -25,6 +25,11 @@ library(shinythemes)
 library(ggplot2)
 library(foreign)
 library(maptools)
+library(ggplot2)
+library(lemon)
+library(cluster)
+library(shinycssloaders)
+
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(theme = shinytheme("cosmo"),
@@ -192,8 +197,8 @@ server <- function(input, output,session) {
   })
   
   #Select managment site, species name, 
-  sites<-readOGR("AppEnvData/ManagmentSites/OEHManagmentSites.shp")
-  siteSP<-sort(unique(sites@data$SciName))
+  sites <- readOGR("AppEnvData/ManagmentSites/OEHManagmentSites.shp")
+  siteSP <- sort(unique(sites@data$SciName))
   updateSelectInput(session, "SOSspecies", "Select management site species name:",
                     choices = siteSP, selected="")
   
@@ -231,6 +236,7 @@ server <- function(input, output,session) {
   
 #  Map of observations  
   output$mymap<- renderLeaflet({
+    
     #runif(input$lat_column)
     #runif(input$long_column)
     # #if(is.null(input$lat_column))return()
@@ -239,7 +245,7 @@ server <- function(input, output,session) {
     # require(input$long_column)
     # 
     #select species data
-    spdat<-spData()
+    spdat <- spData()
     spdat$lat <- spdat[, input$lat_column]
     spdat$long <- spdat[, input$long_column]
     
@@ -306,9 +312,9 @@ server <- function(input, output,session) {
   
   # Extract Environmental data and capad 
   EnvDat <- eventReactive(input$env, {
-    req(input$env)
+    # req(input$env)
     req(input$SOSspecies)
-    spdat<-spData()
+    spdat <- spData()
     spdat$lat <- spdat[, input$lat_column]
     spdat$long <- spdat[, input$long_column]
     dat<-EnvExtract(spdat$lat,spdat$long)
@@ -318,9 +324,9 @@ server <- function(input, output,session) {
     coordinates(coords) <-c("long","lat")
     proj4string(coords)<-crs(sites)
     
-    sp<-input$SOSspecies
+    sp <- input$SOSspecies
     managmentSite <- sites[sites$SciName == sp,]
-    dat<-cbind(dat,over(coords,managmentSite,returnList = FALSE))
+    dat <- cbind(dat, sp::over(coords,managmentSite,returnList = FALSE))
     return(dat)
   })
   
@@ -350,20 +356,20 @@ server <- function(input, output,session) {
     }
     #make a vector of environmental variables to use
     variablesUSE <- reactive({
-      tmax<-input$tmax
-      rain<-input$rain
-      rainVar<-input$rainVar
-      elev<-input$elev
-      soil<-input$soils
-      vars<-c(fn(tmax), fn(rain),fn(rainVar), fn(elev),fn(soil))
+      tmax <- input$tmax
+      rain <- input$rain
+      rainVar <- input$rainVar
+      elev <- input$elev
+      soil <- input$soils
+      vars <- c(fn(tmax), fn(rain), fn(rainVar), fn(elev), fn(soil))
       return(vars)
     })
     
     # Reactive expression for determining best number of clusters
-    clustersNumbers<-reactive({
-      vars<-variablesUSE()
-      Env<-EnvDat()
-      clusters<-ClusterNumbers(EnvDat, variablesUSE)
+    clustersNumbers <- reactive({
+      vars <- variablesUSE()
+      Env <- EnvDat()
+      clusters <- ClusterNumbers(EnvDat, variablesUSE)
       return(clusters)
     })
     
@@ -376,10 +382,12 @@ server <- function(input, output,session) {
     output$clusters <- renderText({
       #req(input$EnvDat)
       #req(input$clusters)
-      #Env<-EnvDat()
-      clusters<-clustersNumbers()
-      #variablesUSE<-variablesUSE()
-      #clusters<-ClusterNumbers(Env, variablesUSE)
+      
+      vars <- variablesUSE()
+      Env <- EnvDat()
+      
+      clusters <- ClusterNumbers(Env, vars)
+      
       paste0("The best three suggested numbers of clusters,",
              " based on a measure of how similar each observation is to",
              " its own cluster compared its closest neighbouring cluster, are ",

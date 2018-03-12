@@ -30,8 +30,6 @@
 
 source("AppFunctions/MultiplotLayout.R", local = T)
 
-require(ggplot2)
-require(lemon)
 
 
 CurClimPlot<-function(allSite,sosSite){
