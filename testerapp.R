@@ -41,8 +41,7 @@ ui <- fluidPage(
      ),
      
      mainPanel( 
-       
-       # Choices for drop-downs menu to colour points by selected variable in map
+       # Choices for the drop-downs menu, colour the points by selected variable in map, "cluster", "tmax", etc. are the names in the data after the cluster analysis is run
        vars <- c(
           "Cluster" = "cluster",
           "Avg. annual Tmax" = "tmax",
@@ -52,7 +51,7 @@ ui <- fluidPage(
           "Soil type" = "soil"
        ),
        
-       #base leaflet map
+       #sets location for base leaflet map and make dropdown menu to select the backgroudn map
        leafletOutput('ClusterPlot'),
        absolutePanel(top = 45, right = 20, width = 150, draggable = TRUE,
                      selectInput("bmap", "Select base map", 
@@ -77,51 +76,45 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output) {
   ################## in the real app this aleady  exists
-  #get the data set up
-  source("AppFunctions/extractEnviroData.R", local = T)
-  sp<-"Acacia acanthoclada"
-  spdat<-read.csv("AppEnvData/SpeciesObservations/SOSflora.csv",header=TRUE)
-  spdat<-subset(spdat,Scientific==sp)
-  sites<-readOGR("AppEnvData/ManagmentSites/OEHManagmentSites.shp")
-
-  spdat$lat <- spdat[, "Latitude_G"]
-  spdat$long <- spdat[, "Longitude_"]
-  dat<-EnvExtract(spdat$lat,spdat$long)
-
-  #select site data
-  coords <- dat[,c("long","lat")]
-  coordinates(coords) <-c("long","lat")
-  proj4string(coords)<-crs(sites)
-
-  managmentSite <- sites[sites$SciName == sp,]
-  EnvDat<-cbind(dat,over(coords,managmentSite,returnList = FALSE))
-  
-  # 
-  # allSite<-dat
-  # sosSite<-subset(dat,!is.na(dat$SiteName))
-  
+          #get the data set up
+          source("AppFunctions/extractEnviroData.R", local = T)
+          sp<-"Acacia acanthoclada"
+          spdat<-read.csv("AppEnvData/SpeciesObservations/SOSflora.csv",header=TRUE)
+          spdat<-subset(spdat,Scientific==sp)
+          sites<-readOGR("AppEnvData/ManagmentSites/OEHManagmentSites.shp")
+        
+          spdat$lat <- spdat[, "Latitude_G"]
+          spdat$long <- spdat[, "Longitude_"]
+          dat<-EnvExtract(spdat$lat,spdat$long)
+        
+          #select site data
+          coords <- dat[,c("long","lat")]
+          coordinates(coords) <-c("long","lat")
+          proj4string(coords)<-crs(sites)
+        
+          managmentSite <- sites[sites$SciName == sp,]
+          EnvDat<-cbind(dat,over(coords,managmentSite,returnList = FALSE))
+  ################################ 
   #perform cluster analysis
   variablesUSE <- c("soil", "elev", "rain", "tmax", "rainVar") #this needs to be reacitve
   clusters<-4 #this needs to be reactive
   clusDat<-  EnvCluserData(EnvDat,variablesUSE,clusters) #make reactive
+  
+  #######################
+  #make coordinates from the clusDat, this will be used when selecting points for SOS managment sites
   coordinates <- SpatialPointsDataFrame( clusDat[,c('long', 'lat')] , clusDat)#reactive?
   
   
-  # generate set of unique location IDs for second layer of selected locations.
+  # generate two set of unique location IDs
   #the unique id’s are needed to color the locations we select. 
-  #The reason for this is that the new color is not a color change, 
-  #but a newly added map layer. Each location in our dataset could at any point in 
-  #time be represented by either one or two layers, so each one needs two unique id’s.
   clusDat$locationID <- paste0(as.character(1:nrow(clusDat)), "_ID")
   clusDat$secondLocationID <- paste0(clusDat$LocationID, "_selectedLayer")
   
+  # list to store the selections for tracking
+  data_of_click <- reactiveValues(clickedMarker = list())
   
-  
-  #empty leaflet plot
+  #make empty leaflet plot, this has the boundaries of the species data, but no points
   output$ClusterPlot <- renderLeaflet({
-      # draw the histogram with the specified number of bins
-      #hist(clusDat$cluster, breaks =5, col = 'darkgray', border = 'white'
-       
        #get base map name
        if(input$bmap== "Base map"){
          mapType<-"OpenStreetMap.Mapnik"
@@ -133,17 +126,11 @@ server <- function(input, output) {
        leaflet() %>%
          addProviderTiles(mapType) %>%
          fitBounds(min(clusDat$long), min(clusDat$lat), max(clusDat$long), max(clusDat$lat))
-
    })
   
-  # list to store the selections for tracking
-  data_of_click <- reactiveValues(clickedMarker = list())
-  
-  
-  #updating points on map based on selected variable and menu to draw polygons
+  #set colouring options for factors and numeric variables
   observe({
     colorBy <- input$variable
-
     if (colorBy == "tmax" |colorBy =="rain" |colorBy =="elev") {
       # Color and palette if the values are  continuous.
       colorData <- clusDat[[colorBy]]
@@ -153,16 +140,18 @@ server <- function(input, output) {
     pal <- colorFactor("viridis", colorData)
     }
 
+    #updating points on map based on selected variable and menu to draw polygons
     leafletProxy("ClusterPlot", data = clusDat) %>% #adds points to the graph
       clearShapes() %>%
       addCircles(~long, ~lat, 
                  radius=5000,
-                 fillOpacity=0.4, 
+                 fillOpacity=1, 
                  fillColor=pal(colorData),
                  weight = 2,
                  stroke = T,
                  layerId = as.character(clusDat$locationID),
-                 highlightOptions = highlightOptions(color = "mediumseagreen",
+                 highlightOptions = highlightOptions(color = "deeppink",
+                                                     fillColor="deeppink",
                                                      opacity = 1.0,
                                                      weight = 2,
                                                      bringToFront = TRUE)) %>%
@@ -187,13 +176,8 @@ server <- function(input, output) {
   })
   
   
-  
-  ############## list to store the selections for tracking ###############
-  data_of_click <- reactiveValues(clickedMarker = list())
-  
-  
-  ############################################### section three #################################################
-  observeEvent(input$mymap_draw_new_feature,{
+  ############subsetting obseration to get those inside the polygons ##################
+  observeEvent(input$mymap_draw_new_feature,{#tells r-shiny that if the user draws a shape return all teh uighe locations based on the location ID
     #Only add new layers for bounded locations
     found_in_bounds <- findLocations(shape = input$mymap_draw_new_feature
                                      , location_coordinates = coordinates
@@ -208,49 +192,49 @@ server <- function(input, output) {
       }
     }
     
-    # look up airports by ids found
-    selected <- subset(airports, locationID %in% data_of_click$clickedMarker)
+    # look up clusDat by ids found
+    selected <- subset(clusDat, locationID %in% data_of_click$clickedMarker)
     
-    proxy <- leafletProxy("mymap")
-    proxy %>% addCircles(data = selected,
+   leafletProxy("ClusterPlot")%>% 
+     addCircles(data = selected,
                          radius = 5000,
-                         lat = selected$Latitude,
-                         lng = selected$Longitude,
-                         fillColor = "wheat",
+                         lat = selected$lat,
+                         lng = selected$long,
+                         fillColor = "red",
                          fillOpacity = 1,
-                         color = "mediumseagreen",
+                         color = "red",
                          weight = 3,
                          stroke = T,
                          layerId = as.character(selected$secondLocationID),
-                         highlightOptions = highlightOptions(color = "hotpink",
+                         highlightOptions = highlightOptions(color = "purple",
                                                              opacity = 1.0,
                                                              weight = 2,
                                                              bringToFront = TRUE))
     
   })
 #   
-#   ############################################### section four ##################################################
+# #   ############################################### section four ##################################################
 #   observeEvent(input$mymap_draw_deleted_features,{
 #     # loop through list of one or more deleted features/ polygons
 #     for(feature in input$mymap_draw_deleted_features$features){
-#       
+# 
 #       # get ids for locations within the bounding shape
 #       bounded_layer_ids <- findLocations(shape = feature
 #                                          , location_coordinates = coordinates
 #                                          , location_id_colname = "secondLocationID")
-#       
-#       
+# 
+# 
 #       # remove second layer representing selected locations
 #       proxy <- leafletProxy("mymap")
 #       proxy %>% removeShape(layerId = as.character(bounded_layer_ids))
-#       
+# 
 #       first_layer_ids <- subset(airports, secondLocationID %in% bounded_layer_ids)$locationID
-#       
+# 
 #       data_of_click$clickedMarker <- data_of_click$clickedMarker[!data_of_click$clickedMarker
 #                                                                  %in% first_layer_ids]
 #     }
 #   })
-# },
+# # },
 # 
 # options = list(height = 400)
 # )
