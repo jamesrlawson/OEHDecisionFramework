@@ -213,6 +213,7 @@ shinyApp(
     observeEvent(input$ClusterPlot_draw_deleted_features,{
       # loop through list of one or more deleted features/ polygons
       for(feature in input$ClusterPlot_draw_deleted_features$features){
+
         # get ids for locations within the bounding shape
         bounded_layer_ids <- findLocations(shape = feature
                                            , location_coordinates = ClusCoordinates
@@ -241,7 +242,7 @@ shinyApp(
 
     
     
-    # #observer event to make table
+    # #observer event to make a new 
     observeEvent(input$ClusterPlot_draw_deleted_features, {
       #find bounds of the shape
       found_in_bounds < - findLocations(shape = input$ClusterPlot_draw_deleted_features,

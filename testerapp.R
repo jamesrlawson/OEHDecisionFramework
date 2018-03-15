@@ -100,15 +100,17 @@ server <- function(input, output) {
   clusters<-4 #this needs to be reactive
   clusDat<-  EnvCluserData(EnvDat,variablesUSE,clusters) #make reactive
   
-  #######################
-  #make coordinates from the clusDat, this will be used when selecting points for SOS managment sites
-  coordinates <- SpatialPointsDataFrame( clusDat[,c('long', 'lat')] , clusDat)#reactive?
   
   
   # generate two set of unique location IDs
   #the unique id’s are needed to color the locations we select. 
   clusDat$locationID <- paste0(as.character(1:nrow(clusDat)), "_ID")
   clusDat$secondLocationID <- paste0(clusDat$LocationID, "_selectedLayer")
+  
+  #######################
+  #make coordinates from the clusDat, this will be used when selecting points for SOS managment sites
+  ClusCoordinates <- SpatialPointsDataFrame( clusDat[,c('long', 'lat')] , clusDat)#reactive?
+  
   
   # list to store the selections for tracking
   data_of_click <- reactiveValues(clickedMarker = list())
@@ -180,7 +182,7 @@ server <- function(input, output) {
   observeEvent(input$mymap_draw_new_feature,{#tells r-shiny that if the user draws a shape return all teh uighe locations based on the location ID
     #Only add new layers for bounded locations
     found_in_bounds <- findLocations(shape = input$mymap_draw_new_feature
-                                     , location_coordinates = coordinates
+                                     , location_coordinates = ClusCoordinates
                                      , location_id_colname = "locationID")
     
     for(id in found_in_bounds){
@@ -195,9 +197,9 @@ server <- function(input, output) {
     # look up clusDat by ids found
     selected <- subset(clusDat, locationID %in% data_of_click$clickedMarker)
     
-   leafletProxy("ClusterPlot")%>% 
-     addCircles(data = selected,
-                         radius = 5000,
+    proxy <- leafletProxy("ClusterPlot")
+    proxy %>%  addCircles(data = selected,
+                         radius = 6000,
                          lat = selected$lat,
                          lng = selected$long,
                          fillColor = "red",
@@ -212,35 +214,76 @@ server <- function(input, output) {
                                                              bringToFront = TRUE))
     
   })
-#   
-# #   ############################################### section four ##################################################
-#   observeEvent(input$mymap_draw_deleted_features,{
-#     # loop through list of one or more deleted features/ polygons
-#     for(feature in input$mymap_draw_deleted_features$features){
-# 
-#       # get ids for locations within the bounding shape
-#       bounded_layer_ids <- findLocations(shape = feature
-#                                          , location_coordinates = coordinates
-#                                          , location_id_colname = "secondLocationID")
-# 
-# 
-#       # remove second layer representing selected locations
-#       proxy <- leafletProxy("mymap")
-#       proxy %>% removeShape(layerId = as.character(bounded_layer_ids))
-# 
-#       first_layer_ids <- subset(airports, secondLocationID %in% bounded_layer_ids)$locationID
-# 
-#       data_of_click$clickedMarker <- data_of_click$clickedMarker[!data_of_click$clickedMarker
-#                                                                  %in% first_layer_ids]
-#     }
-#   })
-# # },
-# 
-# options = list(height = 400)
-# )
-#   
+
+#   ############################################### section four ##################################################
+  observeEvent(input$mymap_draw_deleted_features,{
+    # loop through list of one or more deleted features/ polygons
+    for(feature in input$mymap_draw_deleted_features$features){
+
+      # get ids for locations within the bounding shape
+      bounded_layer_ids <- findLocations(shape = feature
+                                         , location_coordinates = ClusCoordinates
+                                         , location_id_colname = "secondLocationID")
+
+
+      # remove second layer representing selected locations
+      proxy <- leafletProxy("ClusterPlot")
+      proxy %>% removeShape(layerId = as.character(bounded_layer_ids))
+
+      first_layer_ids <- subset(clusDat, secondLocationID %in% bounded_layer_ids)$locationID
+
+      data_of_click$clickedMarker <- data_of_click$clickedMarker[!data_of_click$clickedMarker
+                                                                 %in% first_layer_ids]
+    }
+  })
+# },
+
+
   
 }
+
+
+findLocations <- function(shape, location_coordinates, location_id_colname){
+  
+  # derive polygon coordinates and feature_type from shape input
+  polygon_coordinates <- shape$geometry$coordinates
+  feature_type <- shape$properties$feature_type
+  
+  if(feature_type %in% c("rectangle","polygon")) {
+    
+    # transform into a spatial polygon
+    drawn_polygon <- Polygon(do.call(rbind,lapply(polygon_coordinates[[1]],function(x){c(x[[1]][1],x[[2]][1])})))
+    
+    # use 'over' from the sp package to identify selected locations
+    selected_locs <- sp::over(location_coordinates
+                              , sp::SpatialPolygons(list(sp::Polygons(list(drawn_polygon),"drawn_polygon"))))
+    
+    # get location ids
+    x = (location_coordinates[which(!is.na(selected_locs)), location_id_colname])
+    
+    selected_loc_id = as.character(x[[location_id_colname]])
+    
+    return(selected_loc_id)
+    
+  } else if (feature_type == "circle") {
+    
+    center_coords <- matrix(c(polygon_coordinates[[1]], polygon_coordinates[[2]])
+                            , ncol = 2)
+    
+    # get distances to center of drawn circle for all locations in location_coordinates
+    # distance is in kilometers
+    dist_to_center <- spDistsN1(location_coordinates, center_coords, longlat=TRUE)
+    
+    # get location ids
+    # radius is in meters
+    x <- location_coordinates[dist_to_center < shape$properties$radius/1000, location_id_colname]
+    
+    selected_loc_id = as.character(x[[location_id_colname]])
+    
+    return(selected_loc_id)
+  }
+}
+
 
 # Run the application 
 shinyApp(ui = ui, server = server)

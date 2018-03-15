@@ -1,22 +1,23 @@
-
+#TODO automate the extraction of environmental data, make it reactive
 #TODO: add warning to "Environmental variation" tab - envrironmental data must be extractd first - m
-      #make check that species name in environmental data matches the extracted data  - the environmental data has to go away if the species name or managment species name is changed
+#make check that species name in environmental data matches the extracted data  - the environmental data has to go away if the species name or managment species name is changed
 
-#TODO: ideally you should interactively be able to open shapefile, 
-        #this does not seem to be possible in shiny at this time
-        #SOS managment site files sits in folder in same location as app, this must be maintained for app to work
 #TODO: and symbol to show when data is being read in and when fetch enviro data is working
 #TODO: make population warning pop up when there are too few populations"*For the purposes of this decision framework, where populations total less than five, it is recommended that all sites are managed."
 #TODO: clip data to NSW extents?
+#TODO: add historical data
+#TODO: on tab 4 it says "cluster" above the map
 options(shiny.maxRequestSize=30*1024^2)#change the maximum file size
 
 source("AppFunctions/extractEnviroData.R", local = T)
 source("AppFunctions/plotEnviroHists.R", local = T)
 source("AppFunctions/ClusterAnalysis.R", local = T)
+source("AppFunctions/findLocations.R", local = T)
 
 
 library(shiny)
 library(leaflet)
+library(leaflet.extras)
 library(Hmisc)
 library(raster)
 library(sp)
@@ -64,14 +65,14 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                                                                "Satellite imagery"), 
                                                                   selected = "Base map")),
                                         
-                                         
-                                          h3(strong(div(textOutput("sp_warning"), style="color:red"))),
-                                          h4(strong("The species you have selected is:")),
-                                          h4(strong(em(textOutput("selected_sp")))),
-                                          
-                                         textOutput("obs_number")
+                                        
+                                        h3(strong(div(textOutput("sp_warning"), style="color:red"))),
+                                        h4(strong("The species you have selected is:")),
+                                        h4(strong(em(textOutput("selected_sp")))),
+                                        
+                                        textOutput("obs_number")
                                         # textOutput("nsw_sites")
-                                    
+                                        
                                         
                                       )
                                     )
@@ -97,12 +98,12 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                            ,
                            tabPanel("3. Environmental variation",
                                     h4(strong("Current environmental conditions"),
-                                    plotOutput(outputId = "currentPlot",height = "600px"),
-                                    br(),
-                                    h4(strong("Future climatic conditions"),
-                                    plotOutput(outputId = "futurePlot",height = "300px")
-                                  
-                                    )  
+                                       plotOutput(outputId = "currentPlot",height = "600px"),
+                                       br(),
+                                       h4(strong("Future climatic conditions"),
+                                          plotOutput(outputId = "futurePlot",height = "300px")
+                                          
+                                       )  
                                     )  
                            ),
                            
@@ -119,18 +120,35 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                         numericInput('clusters', 'Cluster count',2,
                                                      min = 2, max = 9)
                                       ),
-                                        
+                                      
                                       mainPanel( 
                                         
-                                        
+                                        textOutput("clustersText"),
                                         #A variety of metrics exist to help choose the number of clusters to be extracted in a cluster analysis.
                                         #We use silhouette width, an internal validation metric which is an aggregated measure of how similar an
                                         #observation is to its own cluster compared its closest neighboring cluster. The metric can range from
                                         #-1 to 1, where higher values are better.
-                                          
-                                          h4(strong(em(textOutput("clusters")))),
-                                           plotOutput('ClusterPlot')
-                                           )
+                                        vars <- c(
+                                          "Cluster" = "cluster",
+                                          "Avg. annual Tmax" = "tmax",
+                                          "Avg. annual rainfall" = "rain",
+                                          "Avg. annual rainfall variability" = "rainVar",
+                                          "Elevation" = "elev",
+                                          "Soil type" = "soil"
+                                        ),
+                                        
+                                        #sets location for base leaflet map and make dropdown menu to select the backgroudn map
+                                        leafletOutput('ClusterPlot'),
+                                        absolutePanel(top = 45, right = 20, width = 150, draggable = TRUE,
+                                                      selectInput("bmap", "Select base map", 
+                                                                  choices =  c("Base map",
+                                                                               "Satellite imagery"), 
+                                                                  selected = "Base map"),
+                                                      selectInput("variable", "Display Variable", vars)),
+                                        #Plots of selected vs. all conditions
+                                        plotOutput('SelectedCurrentPlot',height = "600px"),
+                                        plotOutput('SelectedFuturePlot',height = "300px")
+                                      )
                                     )
                                     
                            ),
@@ -153,7 +171,7 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
 
 server <- function(input, output,session) {
   
-############ 1. Observations ###############  
+  ############ 1. Observations ###############  
   
   info <- eventReactive(input$uploadedfile, {
     req(input$uploadedfile)
@@ -234,14 +252,16 @@ server <- function(input, output,session) {
     
   })
   
-#  Map of observations  
+  #  Map of observations  
   output$mymap<- renderLeaflet({
-    
-    #runif(input$lat_column)
-    #runif(input$long_column)
-    # #if(is.null(input$lat_column))return()
-    #if(is.null(input$long_column))return()
-    # require(input$lat_column)
+    spdat <- spData()
+    #  if(nrow(spdat)<1)
+    #    return(NULL)
+    # #runif(input$lat_column)
+    # #runif(input$long_column)
+    # if(is.null(input$lat_column))return(NULL)
+    # if(is.null(input$long_column))return(NULL)
+    # # require(input$lat_column)
     # require(input$long_column)
     # 
     #select species data
@@ -341,63 +361,137 @@ server <- function(input, output,session) {
     futClimPlot(Env,subset(Env,!is.na(Env$SiteName)))
   })
   
-
+  
   
   
   
   
   ################ 4.Site Selection ###########
-
+  
   
   #get the data ready for cluster analysis
-    #function for subsetting based on yes and no values user adds
-    fn <- function(x){
-      if(x == "yes")as.character(substitute(x))
+  #function for subsetting based on yes and no values user adds
+  fn <- function(x){
+    if(x == "yes")as.character(substitute(x))
+  }
+  #make a vector of environmental variables to use
+  variablesUSE <- reactive({
+    tmax <- input$tmax
+    rain <- input$rain
+    rainVar <- input$rainVar
+    elev <- input$elev
+    soil <- input$soils
+    vars <- c(fn(tmax), fn(rain), fn(rainVar), fn(elev), fn(soil))
+    return(vars)
+  })
+  
+  #A variety of metrics exist to help choose the number of clusters to be extracted in a cluster analysis.
+  #We use silhouette width, an internal validation metric which is an aggregated measure of how similar an
+  #observation is to its own cluster compared its closest neighboring cluster. The metric can range from
+  #-1 to 1, where higher values are better.
+  output$clustersText <- renderText({
+    vars <- variablesUSE()
+    Env <- EnvDat()
+    clustersSuggested <- ClusterNumbers(Env, vars)
+    paste0("The best three suggested numbers of clusters,",
+           " based on a measure of how similar each observation is to",
+           " its own cluster compared its closest neighbouring cluster, are ",
+           clustersSuggested[1], ", ", clustersSuggested[2],
+           ", and ",
+           clustersSuggested[3],
+           "." )
+  })
+  
+  #reactively run the cluster analysis based on the variables and number of clusters selected in the side bar
+    # 
+    # vars <- variablesUSE()
+    # Env <- EnvDat()
+    # clus <-input$clusters
+    # clusDat  <- EnvCluserData(Env,vars,clus)
+
+  
+  # # base map
+  # output$ClusterPlot <- renderLeaflet({
+  #   #get base map name
+  #   if(input$bmap== "Base map"){
+  #     mapType<-"OpenStreetMap.Mapnik"
+  #   }
+  #   if(input$bmap== "Satellite imagery"){
+  #     mapType<-"Esri.WorldImagery"
+  #   }
+  #   #main map
+  #   leaflet() %>%
+  #     addProviderTiles(mapType) %>%
+  #     fitBounds(min(clusDat$long), min(clusDat$lat), max(clusDat$long), max(clusDat$lat))
+  # })  
+  #  
+  
+  # base plot
+  output$ClusterPlot <- renderLeaflet({
+    # draw the histogram with the specified number of bins
+    #hist(clusDat$cluster, breaks =5, col = 'darkgray', border = 'white'
+
+    #get base map name
+    if(input$bmap== "Base map"){
+      mapType<-"OpenStreetMap.Mapnik"
     }
-    #make a vector of environmental variables to use
-    variablesUSE <- reactive({
-      tmax <- input$tmax
-      rain <- input$rain
-      rainVar <- input$rainVar
-      elev <- input$elev
-      soil <- input$soils
-      vars <- c(fn(tmax), fn(rain), fn(rainVar), fn(elev), fn(soil))
-      return(vars)
-    })
-    
-    # Reactive expression for determining best number of clusters
-    clustersNumbers <- reactive({
-      vars <- variablesUSE()
-      Env <- EnvDat()
-      clusters <- ClusterNumbers(EnvDat, variablesUSE)
-      return(clusters)
-    })
-    
-    
- 
-    #A variety of metrics exist to help choose the number of clusters to be extracted in a cluster analysis.
-    #We use silhouette width, an internal validation metric which is an aggregated measure of how similar an
-    #observation is to its own cluster compared its closest neighboring cluster. The metric can range from
-    #-1 to 1, where higher values are better.
-    output$clusters <- renderText({
-      #req(input$EnvDat)
-      #req(input$clusters)
-      
-      vars <- variablesUSE()
-      Env <- EnvDat()
-      
-      clusters <- ClusterNumbers(Env, vars)
-      
-      paste0("The best three suggested numbers of clusters,",
-             " based on a measure of how similar each observation is to",
-             " its own cluster compared its closest neighbouring cluster, are ",
-             clusters[1], ", ", clusters[2],
-             ", and ",
-             clusters[3],
-             "." )
-    })
+    if(input$bmap== "Satellite imagery"){
+      mapType<-"Esri.WorldImagery"
+    }
+    #main map
+    leaflet() %>%
+      addProviderTiles(mapType) %>%
+      fitBounds(min(clusDat$long), min(clusDat$lat), max(clusDat$long), max(clusDat$lat))
 
-
+  })
+  # 
+  proxy <- leafletProxy("ClusterPlot")#this allows you to keep adding things to the map just by calling proxy
+  
+  #set colouring options for factors and numeric variables
+  observe({
+    colorBy <- input$variable
+    if (colorBy == "tmax" |colorBy =="rain" |colorBy =="elev") {
+      # Color and palette if the values are  continuous.
+      colorData <- clusDat[[colorBy]]
+      pal <- colorBin("viridis", colorData, 7, pretty = FALSE)
+    } else {
+      colorData <- clusDat[[colorBy]]
+      pal <- colorFactor("viridis", colorData)
+    }
+    
+    #updating points on map based on selected variable and menu to draw polygons
+    proxy %>% addCircles(data = clusDat,
+                         radius = 3000,
+                         lat = clusDat$lat,
+                         lng = clusDat$long,
+                         fillColor = pal(colorData),
+                         fillOpacity = 1,
+                         color = pal(colorData),
+                         weight = 2,
+                         stroke = T,
+                         layerId = as.character(clusDat$locationID),
+                         highlightOptions = highlightOptions(color = "deeppink",
+                                                             fillColor="deeppink",
+                                                             opacity = 1.0,
+                                                             weight = 3,
+                                                             bringToFront = FALSE)) %>%#bringToFront = FALSE makes it so that selected points stay on the top layer
+      addDrawToolbar(
+        targetGroup='Selected',
+        polylineOptions=FALSE,
+        markerOptions = FALSE,
+        polygonOptions = drawPolygonOptions(shapeOptions=drawShapeOptions(fillOpacity = 0
+                                                                          ,color = 'black'
+                                                                          ,weight = 3)),
+        rectangleOptions = drawRectangleOptions(shapeOptions=drawShapeOptions(fillOpacity = 0
+                                                                              ,color = 'black'
+                                                                              ,weight = 3)),
+        circleOptions = drawCircleOptions(shapeOptions = drawShapeOptions(fillOpacity = 0
+                                                                          ,color = 'black'
+                                                                          ,weight = 3)),
+        editOptions = editToolbarOptions(edit = FALSE, selectedPathOptions = selectedPathOptions()))
+  })
+  
+  
   
 }
 
