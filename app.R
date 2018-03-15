@@ -402,35 +402,10 @@ server <- function(input, output,session) {
            "." )
   })
   
-  #reactively run the cluster analysis based on the variables and number of clusters selected in the side bar
-    # 
-    # vars <- variablesUSE()
-    # Env <- EnvDat()
-    # clus <-input$clusters
-    # clusDat  <- EnvCluserData(Env,vars,clus)
-
-  
-  # # base map
-  # output$ClusterPlot <- renderLeaflet({
-  #   #get base map name
-  #   if(input$bmap== "Base map"){
-  #     mapType<-"OpenStreetMap.Mapnik"
-  #   }
-  #   if(input$bmap== "Satellite imagery"){
-  #     mapType<-"Esri.WorldImagery"
-  #   }
-  #   #main map
-  #   leaflet() %>%
-  #     addProviderTiles(mapType) %>%
-  #     fitBounds(min(clusDat$long), min(clusDat$lat), max(clusDat$long), max(clusDat$lat))
-  # })  
-  #  
-  
+   
   # base plot
   output$ClusterPlot <- renderLeaflet({
-    # draw the histogram with the specified number of bins
-    #hist(clusDat$cluster, breaks =5, col = 'darkgray', border = 'white'
-
+    Env <- EnvDat()
     #get base map name
     if(input$bmap== "Base map"){
       mapType<-"OpenStreetMap.Mapnik"
@@ -441,35 +416,46 @@ server <- function(input, output,session) {
     #main map
     leaflet() %>%
       addProviderTiles(mapType) %>%
-      fitBounds(min(clusDat$long), min(clusDat$lat), max(clusDat$long), max(clusDat$lat))
+      fitBounds(min(Env$long), min(Env$lat), max(Env$long), max(Env$lat))
 
   })
   # 
-  proxy <- leafletProxy("ClusterPlot")#this allows you to keep adding things to the map just by calling proxy
+   
   
+  #reactively run the cluster analysis based on the variables and number of clusters selected in the side bar
+  clusDat <- eventReactive({
+    EnvCluserData(EnvDat,variablesUSE,input$clusters)
+  })
+  
+  
+  proxy <- leafletProxy("ClusterPlot")#this allows you to keep adding things to the map just by calling proxy
+  # 
+
   #set colouring options for factors and numeric variables
   observe({
+    EnvClus<-clusDat()
     colorBy <- input$variable
     if (colorBy == "tmax" |colorBy =="rain" |colorBy =="elev") {
       # Color and palette if the values are  continuous.
-      colorData <- clusDat[[colorBy]]
+      colorData <- EnvClus[[colorBy]]
       pal <- colorBin("viridis", colorData, 7, pretty = FALSE)
     } else {
-      colorData <- clusDat[[colorBy]]
+      colorData <- EnvClus[[colorBy]]
       pal <- colorFactor("viridis", colorData)
     }
-    
+
+
     #updating points on map based on selected variable and menu to draw polygons
-    proxy %>% addCircles(data = clusDat,
+    proxy %>% addCircles(data = EnvClus,
                          radius = 3000,
-                         lat = clusDat$lat,
-                         lng = clusDat$long,
+                         lat = lat,
+                         lng = long,
                          fillColor = pal(colorData),
                          fillOpacity = 1,
                          color = pal(colorData),
                          weight = 2,
                          stroke = T,
-                         layerId = as.character(clusDat$locationID),
+                         layerId = as.character(locationID),
                          highlightOptions = highlightOptions(color = "deeppink",
                                                              fillColor="deeppink",
                                                              opacity = 1.0,
