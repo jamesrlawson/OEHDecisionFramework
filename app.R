@@ -9,10 +9,10 @@
 #TODO: on tab 4 it says "cluster" above the map
 options(shiny.maxRequestSize=30*1024^2)#change the maximum file size
 
-source("AppFunctions/extractEnviroData.R", local = T)
-source("AppFunctions/plotEnviroHists.R", local = T)
-source("AppFunctions/ClusterAnalysis.R", local = T)
-source("AppFunctions/findLocations.R", local = T)
+source("AppFunctions/extractEnviroData.R")
+source("AppFunctions/plotEnviroHists.R")
+source("AppFunctions/ClusterAnalysis.R")
+source("AppFunctions/findLocations.R")
 
 
 library(shiny)
@@ -175,15 +175,17 @@ server <- function(input, output,session) {
   
   info <- eventReactive(input$uploadedfile, {
     req(input$uploadedfile)
-    # read in data 
-    fext <- tools::file_ext(input$uploadedfile)[1]#get extension
+
+    # Get file extension
+    fext <- tools::file_ext(input$uploadedfile)[1]
     if(fext == "csv"){
       df <- read.csv(input$uploadedfile$datapath)
     } 
     if(fext %in% c("xls","xlsx")){
       df <- as.data.frame(read_excel(input$uploadedfile$datapath))
     }
-    vars <- names(df)#vector of column names
+    vars <- names(df)
+    
     # Identify columns interested in
     updateSelectInput(session, "spec_column", "Column with species names:", 
                       choices = vars, selected="")
@@ -191,7 +193,9 @@ server <- function(input, output,session) {
                       choices = vars, selected="")
     updateSelectInput(session, "long_column", "Column with longitude:", 
                       choices = vars, selected="")
-    return(df)#return the data
+    
+    # Return the data
+    return(df)
   }) 
   
   
@@ -207,11 +211,16 @@ server <- function(input, output,session) {
   
   # Reactive expression for data subsetted based on species user has selected
   spData <- reactive({
+    
     f <- info()
-    if(is.null(input$species))return()
-    f$SPECIES <- f[, input$spec_column]
-    f2<- subset(f,SPECIES == input$species)
-    return(f2)
+    
+    if(isTruthy(input$species) && isTruthy(input$spec_column)){
+      f$SPECIES <- f[, input$spec_column]
+      f2<- subset(f,SPECIES == input$species)
+      return(f2)
+    } else {
+      return(NULL)
+    }
   })
   
   #Select managment site, species name, 
@@ -238,23 +247,31 @@ server <- function(input, output,session) {
   
   #summary text
   output$obs_number <- renderText({
-    req(input$env)
-    req(input$SOSspecies)
-    Env<-EnvDat()
-    obsCount<-nrow(Env)
-    sosCount<-nrow(subset(Env,!is.na(Env$SiteName)))
-    sosPer<-round(sosCount/obsCount*100,2)
-    paste0("The total number of observations is ",
-           obsCount,
-           " and ",
-           sosPer, 
-           "% of observations are within management sites." )
     
+    if(isTruthy(input$env) && isTruthy(input$SOSspecies)){
+      # req(input$env)
+      # req(input$SOSspecies)
+      Env <- EnvDat()
+      obsCount <- nrow(Env)
+      sosCount <- nrow(subset(Env, !is.na(Env$SiteName)))
+      sosPer <- round(sosCount/obsCount*100,2)
+      sprintf("The total number of observations is %s and %s%% of observations are within management sites.",
+              obsCount, sosPer)
+    } else {
+      "Select species and retrieve environmental data first."
+    }
+             
   })
   
   #  Map of observations  
   output$mymap<- renderLeaflet({
+   
     spdat <- spData()
+    
+    req(input$long_column, input$lat_column, 
+        input$SOSspecies, input$species, input$spec_column)
+
+    
     #  if(nrow(spdat)<1)
     #    return(NULL)
     # #runif(input$lat_column)
@@ -279,11 +296,10 @@ server <- function(input, output,session) {
     }
     
     
-    #select site data
-    sp<-input$SOSspecies
-    SPsite <- sites[sites$SciName == sp,]
+    # Select site data
+    SPsite <- sites[sites$SciName == input$SOSspecies,]
     
-    #main map
+    # Main map
     leaflet() %>%
       addProviderTiles(mapType) %>%
       #location of managment sites
@@ -333,11 +349,12 @@ server <- function(input, output,session) {
   # Extract Environmental data and capad 
   EnvDat <- eventReactive(input$env, {
     # req(input$env)
-    req(input$SOSspecies)
+    req(input$SOSspecies, input$long_column, input$lat_column)
+    
     spdat <- spData()
     spdat$lat <- spdat[, input$lat_column]
     spdat$long <- spdat[, input$long_column]
-    dat<-EnvExtract(spdat$lat,spdat$long)
+    dat <- EnvExtract(spdat$lat,spdat$long)
     
     #select site data
     coords <- dat[,c("long","lat")]
@@ -352,7 +369,7 @@ server <- function(input, output,session) {
   
   #plots of Environmental data - code for function is in "AppFunctions/plotEnviroHists.R")
   output$currentPlot <- renderPlot({
-    Env<-EnvDat()
+    Env <- EnvDat()
     CurClimPlot(Env,subset(Env,!is.na(Env$SiteName))) 
   })
   
@@ -423,8 +440,12 @@ server <- function(input, output,session) {
    
   
   #reactively run the cluster analysis based on the variables and number of clusters selected in the side bar
-  clusDat <- eventReactive({
-    EnvCluserData(EnvDat,variablesUSE,input$clusters)
+  clusDat <- reactive({
+    
+    EnvCluserData(EnvDat(),
+                  variablesUSE(),
+                  input$clusters)
+    
   })
   
   
@@ -433,7 +454,7 @@ server <- function(input, output,session) {
 
   #set colouring options for factors and numeric variables
   observe({
-    EnvClus<-clusDat()
+    EnvClus <- clusDat()
     colorBy <- input$variable
     if (colorBy == "tmax" |colorBy =="rain" |colorBy =="elev") {
       # Color and palette if the values are  continuous.
@@ -448,19 +469,19 @@ server <- function(input, output,session) {
     #updating points on map based on selected variable and menu to draw polygons
     proxy %>% addCircles(data = EnvClus,
                          radius = 3000,
-                         lat = lat,
-                         lng = long,
+                         lat = ~lat,
+                         lng = ~long,
                          fillColor = pal(colorData),
                          fillOpacity = 1,
                          color = pal(colorData),
                          weight = 2,
-                         stroke = T,
-                         layerId = as.character(locationID),
+                         stroke = TRUE,
                          highlightOptions = highlightOptions(color = "deeppink",
                                                              fillColor="deeppink",
                                                              opacity = 1.0,
                                                              weight = 3,
-                                                             bringToFront = FALSE)) %>%#bringToFront = FALSE makes it so that selected points stay on the top layer
+                                                             bringToFront = FALSE)) %>%
+      #bringToFront = FALSE makes it so that selected points stay on the top layer
       addDrawToolbar(
         targetGroup='Selected',
         polylineOptions=FALSE,

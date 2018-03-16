@@ -28,9 +28,10 @@
 # variablesUSE <- c("soil", "elev", "rain", "tmax", "rainVar")
 # #clusters<-4
 
-EnvCluserData <- function(Env, variablesUSE,clusters) {
+EnvCluserData <- function(Env, variablesUSE, clusters) {
   # get data that is needed
   dat <- Env
+  
   #clean data for use
   datCluster <- dat[, variablesUSE]
   datCluster$soil <- if (is.element("soil", variablesUSE))factor(datCluster$soil)
