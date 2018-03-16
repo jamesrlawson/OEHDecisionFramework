@@ -385,6 +385,9 @@ server <- function(input, output,session) {
   
   ################ 4.Site Selection ###########
   
+  # list to store the selections for tracking
+  data_of_click <- reactiveValues(clickedMarker = list())
+  
   
   #get the data ready for cluster analysis
   #function for subsetting based on yes and no values user adds
@@ -442,9 +445,12 @@ server <- function(input, output,session) {
   #reactively run the cluster analysis based on the variables and number of clusters selected in the side bar
   clusDat <- reactive({
     
-    EnvCluserData(EnvDat(),
+    df<-EnvCluserData(EnvDat(),
                   variablesUSE(),
                   input$clusters)
+    df$locationID<-paste0(1:nrow(df),"ID")
+    df$secondLocationID <- paste(as.character(df$locationID), "_selectedLayer", sep="")
+    return(df)
     
   })
   
@@ -452,9 +458,11 @@ server <- function(input, output,session) {
   proxy <- leafletProxy("ClusterPlot")#this allows you to keep adding things to the map just by calling proxy
   # 
 
-  #set colouring options for factors and numeric variables
   observe({
     EnvClus <- clusDat()
+    #make coordinates from the EnvClus, this will be used when selecting points for SOS managment sites
+  
+    #set colouring options for factors and numeric variables
     colorBy <- input$variable
     if (colorBy == "tmax" |colorBy =="rain" |colorBy =="elev") {
       # Color and palette if the values are  continuous.
@@ -497,6 +505,111 @@ server <- function(input, output,session) {
                                                                           ,weight = 3)),
         editOptions = editToolbarOptions(edit = FALSE, selectedPathOptions = selectedPathOptions()))
   })
+  
+  
+  
+  
+  # ############subsetting obseration to get those inside the polygons ##################
+  observeEvent(input$ClusterPlot_draw_new_feature,{
+    EnvClus <- clusDat()
+    ClusCoordinates <- SpatialPointsDataFrame(EnvClus[,c('long', 'lat')] , EnvClus)
+    #tells r-shiny that if the user draws a shape return all teh uighe locations based on the location ID
+    #Only add new layers for bounded locations
+    found_in_bounds <- findLocations(shape = input$ClusterPlot_draw_new_feature
+                                     , location_coordinates = ClusCoordinates
+                                     , location_id_colname = "locationID")
+
+    for(id in found_in_bounds){
+      if(id %in% data_of_click$clickedMarker){
+        # don't add id
+      } else {
+        # add id
+        data_of_click$clickedMarker<-append(data_of_click$clickedMarker, id, 0)
+      }
+    }
+
+    # look up clusDat by ids found
+    selected <- subset(EnvClus, locationID %in% data_of_click$clickedMarker)
+    proxy <- leafletProxy("ClusterPlot")
+    proxy %>% addCircles(data = selected,#this is a new layer over the previous ones of the selected points
+                         radius = 3500,#this makes a circle of a slightly larger size around the points
+                         lat = selected$lat,
+                         lng = selected$long,
+                         fillColor = "transparent",#by not setting the full color you can see the variable (i.e cluster or soiltype) within the red circle
+                         fillOpacity = 1,
+                         color = "red",
+                         weight = 2,
+                         stroke = T,
+                         layerId = as.character(selected$secondLocationID),
+                         highlightOptions = highlightOptions(color = "hotpink",
+                                                             opacity = 1.0,
+                                                             weight = 2,
+                                                             bringToFront = FALSE))
+
+  })
+  
+  
+  #function that removes selected locations since the user can delete all shapes     
+  observeEvent(input$ClusterPlot_draw_deleted_features,{
+    # loop through list of one or more deleted features/ polygons
+    for(feature in input$ClusterPlot_draw_deleted_features$features){
+      # get ids for locations within the bounding shape
+      bounded_layer_ids <- findLocations(shape = feature
+                                         , location_coordinates = ClusCoordinates
+                                         , location_id_colname = "secondLocationID")
+      
+      
+      # remove second layer representing selected locations
+      proxy <- leafletProxy("ClusterPlot")
+      proxy %>% removeShape(layerId = as.character(bounded_layer_ids))
+      
+      first_layer_ids <- subset(clusDat, secondLocationID %in% bounded_layer_ids)$locationID
+      
+      data_of_click$clickedMarker <- data_of_click$clickedMarker[!data_of_click$clickedMarker
+                                                                 %in% first_layer_ids]
+      
+    }
+  })
+  
+  # #observer event to make table
+  observeEvent(input$ClusterPlot_draw_deleted_features, {
+    #find bounds of the shape
+    found_in_bounds < - findLocations(shape = input$ClusterPlot_draw_deleted_features,
+                                      location_coordinates = ClusCoordinates, 
+                                      location_id_colname = "locationID")
+    for(id in found_in_bounds){
+      if(id %in% data_of_click$clickedMarker){
+        # don't add id
+      } else {
+        # add id
+        data_of_click$clickedMarker < - append(data_of_click$clickedMarker, id, 0) } } })
+  
+  selectedLocations <- reactive({
+    EnvClus <- clusDat()
+    selectedLocations <- subset(EnvClus, locationID %in% data_of_click$clickedMarker)
+    # return this output
+    selectedLocations
+  })
+  
+  
+  
+  #use the plotEnviroHist funciton to make plots
+   output$SelectedCurrentPlot <- renderPlot({
+     selectedDat <- selectedLocations()
+     if (nrow(selectedDat)<1)#this removes the error message in the plotting function, if no locations selected, no plots
+       return(NULL)
+     selectedDat <- selectedLocations()
+     CurClimPlot(clusDat(),selectedDat)
+   })
+
+   output$SelectedFuturePlot <- renderPlot({
+     selectedDat <- selectedLocations()
+     if (nrow(selectedDat)<1)#this removes the error message in the plotting function, if no locations selected, no plots
+       return(NULL)
+     selectedDat <- selectedLocations()
+     futClimPlot(clusDat(),selectedDat)
+   })
+  
   
   
   
