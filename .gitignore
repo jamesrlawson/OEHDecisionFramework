@@ -1,6 +1,13 @@
+.DS_Store
 .Rproj.user
+
 .Rhistory
+
 .RData
+
 .Ruserdata
+
 OLD
 AppEnvData
+RawData
+NSWAtlas_Thr_Fauna.dbf
