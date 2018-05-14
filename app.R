@@ -206,7 +206,7 @@ server <- function(input, output,session) {
     updateSelectInput(session, "lat_column", "Column with latitude:", 
                       choices = vars, selected=lat)
     updateSelectInput(session, "long_column", "Column with longitude:", 
-                      choices = vars, selected=lat)
+                      choices = vars, selected=lon)
     
     # Return the data
     return(df)
