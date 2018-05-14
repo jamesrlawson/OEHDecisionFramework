@@ -112,11 +112,11 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                     
                                     sidebarLayout(
                                       sidebarPanel(
-                                        selectInput("tmax", "Avg. annual Tmax", c("yes","no")),
-                                        selectInput("rain", "Avg. annual rainfall", c("yes","no")),
-                                        selectInput("rainVar", "Avg. annual rainfall variability", c("yes","no")), 
-                                        selectInput("elev", "Elevation", c("yes","no")),
-                                        selectInput("soils", "Soil type", c("yes","no")),
+                                        checkboxInput("tmax", "Avg. annual Tmax", FALSE),
+                                        checkboxInput("rain", "Avg. annual rainfall", FALSE),
+                                        checkboxInput("rainVar", "Avg. annual rainfall variability", FALSE), 
+                                        checkboxInput("elev", "Elevation", FALSE),
+                                        checkboxInput("soils", "Soil type", FALSE),
                                         numericInput('clusters', 'Cluster count',2,
                                                      min = 2, max = 9)
                                       ),
@@ -427,7 +427,9 @@ server <- function(input, output,session) {
     rainVar <- input$rainVar
     elev <- input$elev
     soil <- input$soils
-    vars <- c(fn(tmax), fn(rain), fn(rainVar), fn(elev), fn(soil))
+    # vars <- c(fn(tmax), fn(rain), fn(rainVar), fn(elev), fn(soil))
+    vars <- c(tmax, rain, rainVar, elev, soil)
+    
     return(vars)
   })
   
@@ -436,6 +438,9 @@ server <- function(input, output,session) {
   #observation is to its own cluster compared its closest neighboring cluster. The metric can range from
   #-1 to 1, where higher values are better.
   output$clustersText <- renderText({
+    
+    req(any(c(input$tmax, input$rain, input$rainVar, input$elev, input$soils) %in% TRUE))
+    
     vars <- variablesUSE()
     Env <- EnvDat()
     clustersSuggested <- ClusterNumbers(Env, vars)
@@ -470,6 +475,8 @@ server <- function(input, output,session) {
   
   #reactively run the cluster analysis based on the variables and number of clusters selected in the side bar
   clusDat <- reactive({
+    
+    req(input$tmax !=0)
     
     df<-EnvCluserData(EnvDat(),
                   variablesUSE(),
