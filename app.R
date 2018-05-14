@@ -427,9 +427,10 @@ server <- function(input, output,session) {
     rainVar <- input$rainVar
     elev <- input$elev
     soil <- input$soils
-    # vars <- c(fn(tmax), fn(rain), fn(rainVar), fn(elev), fn(soil))
-    vars <- c(tmax, rain, rainVar, elev, soil)
+    allVars <- c('tmax','rain','rainVar','elev','soil')
+    vars <- allVars[c(tmax, rain, rainVar, elev, soil)]
     
+    print(vars)
     return(vars)
   })
   
@@ -439,7 +440,9 @@ server <- function(input, output,session) {
   #-1 to 1, where higher values are better.
   output$clustersText <- renderText({
     
-    req(any(c(input$tmax, input$rain, input$rainVar, input$elev, input$soils) %in% TRUE))
+    # req(any(c(input$tmax, input$rain, input$rainVar, input$elev, input$soils) %in% TRUE))
+    req(sum(c(input$tmax, input$rain, input$rainVar, input$elev, input$soils) %in% TRUE) > 1)
+    
     
     vars <- variablesUSE()
     Env <- EnvDat()
@@ -476,7 +479,8 @@ server <- function(input, output,session) {
   #reactively run the cluster analysis based on the variables and number of clusters selected in the side bar
   clusDat <- reactive({
     
-    req(input$tmax !=0)
+    req(sum(c(input$tmax, input$rain, input$rainVar, input$elev, input$soils) %in% TRUE) > 1)
+   # req(input$tmax %in% TRUE)
     
     df<-EnvCluserData(EnvDat(),
                   variablesUSE(),
