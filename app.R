@@ -175,7 +175,7 @@ server <- function(input, output,session) {
   
   info <- eventReactive(input$uploadedfile, {
     req(input$uploadedfile)
-
+    
     # Get file extension
     fext <- tools::file_ext(input$uploadedfile)[1]
     if(fext == "csv"){
@@ -186,13 +186,27 @@ server <- function(input, output,session) {
     }
     vars <- names(df)
     
+    # check for standard column names
+    sci <- NA
+    if('Scientific' %in% vars) {
+      sci <- 'Scientific'
+    }
+    lat <- NA
+    if('Latitude_G' %in% vars) {
+      lat <- 'Latitude_G'
+    }
+    lon <- NA
+    if('Longitude_' %in% vars) {
+      lon <- 'Longitude_'
+    }
+    
     # Identify columns interested in
     updateSelectInput(session, "spec_column", "Column with species names:", 
-                      choices = vars, selected="")
+                      choices = vars, selected=sci)
     updateSelectInput(session, "lat_column", "Column with latitude:", 
-                      choices = vars, selected="")
+                      choices = vars, selected=lat)
     updateSelectInput(session, "long_column", "Column with longitude:", 
-                      choices = vars, selected="")
+                      choices = vars, selected=lat)
     
     # Return the data
     return(df)
