@@ -206,13 +206,13 @@ server <- function(input, output,session) {
     updateSelectInput(session, "lat_column", "Column with latitude:", 
                       choices = vars, selected=lat)
     updateSelectInput(session, "long_column", "Column with longitude:", 
-                      choices = vars, selected=lat)
+                      choices = vars, selected=lon)
     
     # Return the data
     return(df)
   }) 
   
-  
+
   #select species name
   outVar2 <- reactive({
     f <- info()
@@ -237,12 +237,20 @@ server <- function(input, output,session) {
     }
   })
   
-  #Select managment site, species name, 
+  #Select managment site, species name
   sites <- readOGR("AppEnvData/ManagmentSites/OEHManagmentSites.shp")
   siteSP <- sort(unique(sites@data$SciName))
-  updateSelectInput(session, "SOSspecies", "Select management site species name:",
-                    choices = siteSP, selected="")
   
+  # if species name is found in management sites data, autoselect it in the SOSspecies selector
+  observeEvent(input$species, {
+    if(input$species %in% siteSP) {
+    updateSelectInput(session, "SOSspecies", "Select management site species name:",
+                      choices = siteSP, selected=input$species)
+    } else {
+      updateSelectInput(session, "SOSspecies", "Select management site species name:",
+                        choices = siteSP, selected="")
+    }
+  })
   
   #Error text if species observations and Managment sites species do not match
   output$sp_warning <- renderText({
