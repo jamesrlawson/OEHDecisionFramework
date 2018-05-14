@@ -52,7 +52,7 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                         selectInput("SOSspecies", 
                                                     "Select management site species name:", 
                                                     choices=NULL),
-                                        actionButton("env", "Press to fetch enviro. data")
+                                       actionButton("env", "Load environmental data")
                                         
                                       ),
                                       
@@ -371,22 +371,26 @@ server <- function(input, output,session) {
   # Extract Environmental data and capad 
   EnvDat <- eventReactive(input$env, {
     # req(input$env)
-    req(input$SOSspecies, input$long_column, input$lat_column)
     
-    spdat <- spData()
-    spdat$lat <- spdat[, input$lat_column]
-    spdat$long <- spdat[, input$long_column]
-    dat <- EnvExtract(spdat$lat,spdat$long)
-    
-    #select site data
-    coords <- dat[,c("long","lat")]
-    coordinates(coords) <-c("long","lat")
-    proj4string(coords)<-crs(sites)
-    
-    sp <- input$SOSspecies
-    managmentSite <- sites[sites$SciName == sp,]
-    dat <- cbind(dat, sp::over(coords,managmentSite,returnList = FALSE))
-    return(dat)
+    withProgress(message = 'Loading environmental data', value = 1, {
+      
+      req(input$SOSspecies, input$long_column, input$lat_column)
+      
+      spdat <- spData()
+      spdat$lat <- spdat[, input$lat_column]
+      spdat$long <- spdat[, input$long_column]
+      dat <- EnvExtract(spdat$lat,spdat$long)
+      
+      #select site data
+      coords <- dat[,c("long","lat")]
+      coordinates(coords) <-c("long","lat")
+      proj4string(coords)<-crs(sites)
+      
+      sp <- input$SOSspecies
+      managmentSite <- sites[sites$SciName == sp,]
+      dat <- cbind(dat, sp::over(coords,managmentSite,returnList = FALSE))
+      return(dat)
+    })
   })
   
   #plots of Environmental data - code for function is in "AppFunctions/plotEnviroHists.R")
