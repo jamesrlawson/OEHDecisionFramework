@@ -325,7 +325,14 @@ server <- function(input, output,session) {
       addCircles(spdat$long, spdat$lat,#locations of species
                  fill = TRUE,
                  radius = 10)%>%
-      addPolygons(data=SPsite, weight = 3, color = "red", fillColor = "red", opacity = 0.5)%>%
+      addPolygons(data=SPsite, 
+                  weight = 3, 
+                  color = "red", 
+                  fillColor = "red", 
+                  opacity = 0.5,
+                  popup = paste(
+                    '<strong>SoS Site:</strong>', capitalize(as.character(SPsite$SiteName)), '<br>'  
+                  )) %>%
       addCircles(spdat$long, spdat$lat,#add the points again but make them clear, this allows for popup of info
                  fill = FALSE,
                  color = "#00ff0001",
