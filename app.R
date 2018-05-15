@@ -109,6 +109,7 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                     
                                     sidebarLayout(
                                       sidebarPanel(
+                                        strong("Select variables for cluster analysis:"),
                                         checkboxInput("tmax", "Avg. annual Tmax", FALSE),
                                         checkboxInput("rain", "Avg. annual rainfall", FALSE),
                                         checkboxInput("rainVar", "Avg. annual rainfall variability", FALSE), 
@@ -118,24 +119,22 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                                      min = 2, max = 9)
                                       ),
                                       
-                                      mainPanel( 
-                                        
+                                      mainPanel(
                                         textOutput("clustersText"),
                                         #A variety of metrics exist to help choose the number of clusters to be extracted in a cluster analysis.
                                         #We use silhouette width, an internal validation metric which is an aggregated measure of how similar an
                                         #observation is to its own cluster compared its closest neighboring cluster. The metric can range from
                                         #-1 to 1, where higher values are better.
-                                        vars <- c(
+                                        
+                                        #sets location for base leaflet map and make dropdown menu to select the backgroudn map
+                                        selectInput("variable", "Display Variable", c(
                                           "Cluster" = "cluster",
                                           "Avg. annual Tmax" = "tmax",
                                           "Avg. annual rainfall" = "rain",
                                           "Avg. annual rainfall variability" = "rainVar",
                                           "Elevation" = "elev",
                                           "Soil type" = "soil"
-                                        ),
-                                        
-                                        #sets location for base leaflet map and make dropdown menu to select the backgroudn map
-                                        selectInput("variable", "Display Variable", vars),
+                                        )),
                                         leafletOutput('ClusterPlot'),
                                         plotOutput('SelectedCurrentPlot',height = "600px"),
                                         plotOutput('SelectedFuturePlot',height = "300px")
