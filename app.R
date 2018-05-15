@@ -58,14 +58,11 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                       
                                       # Show a plot of the observations
                                       mainPanel(
+                                        selectInput("bmap", "Select base map", 
+                                                    choices =  c("OpenStreetMap",
+                                                                 "Satellite imagery"),
+                                                    selected = "OpenStreetMap"),
                                         leafletOutput("mymap"),
-                                        absolutePanel(top = 45, right = 20, width = 150, draggable = TRUE,
-                                                      selectInput("bmap", "Select base map", 
-                                                                  choices =  c("Base map",
-                                                                               "Satellite imagery"), 
-                                                                  selected = "Base map")),
-                                        
-                                        
                                         h3(strong(div(textOutput("sp_warning"), style="color:red"))),
                                         h4(strong("The species you have selected is:")),
                                         h4(strong(em(textOutput("selected_sp")))),
@@ -138,14 +135,8 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                         ),
                                         
                                         #sets location for base leaflet map and make dropdown menu to select the backgroudn map
+                                        selectInput("variable", "Display Variable", vars),
                                         leafletOutput('ClusterPlot'),
-                                        absolutePanel(top = 45, right = 20, width = 150, draggable = TRUE,
-                                                      selectInput("bmap", "Select base map", 
-                                                                  choices =  c("Base map",
-                                                                               "Satellite imagery"), 
-                                                                  selected = "Base map"),
-                                                      selectInput("variable", "Display Variable", vars)),
-                                        #Plots of selected vs. all conditions
                                         plotOutput('SelectedCurrentPlot',height = "600px"),
                                         plotOutput('SelectedFuturePlot',height = "300px")
                                       )
@@ -285,6 +276,21 @@ server <- function(input, output,session) {
              
   })
   
+  
+  #get base map name
+  
+  getMapType <- reactive({
+    input$bmap
+    if(input$bmap== "OpenStreetMap"){
+      mapType<-"OpenStreetMap.Mapnik"
+    }
+    if(input$bmap== "Satellite imagery"){
+      mapType<-"Esri.WorldImagery"
+    }
+    return(mapType)
+  })
+  
+  
   #  Map of observations  
   output$mymap<- renderLeaflet({
    
@@ -308,22 +314,13 @@ server <- function(input, output,session) {
     spdat$lat <- spdat[, input$lat_column]
     spdat$long <- spdat[, input$long_column]
     
-    #get base map name
-    
-    if(input$bmap== "Base map"){
-      mapType<-"OpenStreetMap.Mapnik"
-    }
-    if(input$bmap== "Satellite imagery"){
-      mapType<-"Esri.WorldImagery"
-    }
-    
-    
     # Select site data
     SPsite <- sites[sites$SciName == input$SOSspecies,]
     
     # Main map
     leaflet() %>%
-      addProviderTiles(mapType) %>%
+      # addProviderTiles(mapType) %>%
+      addProviderTiles(getMapType()) %>%
       #location of managment sites
       addCircles(spdat$long, spdat$lat,#locations of species
                  fill = TRUE,
@@ -415,11 +412,11 @@ server <- function(input, output,session) {
   data_of_click <- reactiveValues(clickedMarker = list())
   
   
-  #get the data ready for cluster analysis
-  #function for subsetting based on yes and no values user adds
-  fn <- function(x){
-    if(x == "yes")as.character(substitute(x))
-  }
+  # #get the data ready for cluster analysis
+  # #function for subsetting based on yes and no values user adds
+  # fn <- function(x){
+  #   if(x == "yes")as.character(substitute(x))
+  # }
   #make a vector of environmental variables to use
   variablesUSE <- reactive({
     tmax <- input$tmax
@@ -460,16 +457,10 @@ server <- function(input, output,session) {
   # base plot
   output$ClusterPlot <- renderLeaflet({
     Env <- EnvDat()
-    #get base map name
-    if(input$bmap== "Base map"){
-      mapType<-"OpenStreetMap.Mapnik"
-    }
-    if(input$bmap== "Satellite imagery"){
-      mapType<-"Esri.WorldImagery"
-    }
+
     #main map
     leaflet() %>%
-      addProviderTiles(mapType) %>%
+      addProviderTiles(getMapType()) %>%
       fitBounds(min(Env$long), min(Env$lat), max(Env$long), max(Env$lat))
 
   })
