@@ -498,20 +498,46 @@ server <- function(input, output,session) {
 
 
     #updating points on map based on selected variable and menu to draw polygons
-    proxy %>% addCircles(data = EnvClus,
-                         radius = 1500,
+    # proxy %>% addCircles(data = EnvClus,
+    proxy %>% 
+      
+      addCircleMarkers(data = EnvClus[is.na(EnvClus$SiteName),],
+                 # radius = 1500,
+                 lat = ~lat,
+                 lng = ~long,
+                 fillColor = pal(colorData),
+                 fillOpacity = 1,
+                 color = pal(colorData),
+                 weight = 2,
+                 stroke = TRUE,
+                 # highlightOptions = highlightOptions(color = "deeppink",
+                 #                                     fillColor="deeppink",
+                 #                                     opacity = 1.0,
+                 #                                     weight = 3,
+                 #                                     bringToFront = FALSE),
+                 group = 'Not site managed') %>%
+      
+      addCircleMarkers(data = EnvClus[!is.na(EnvClus$SiteName),],
+                         # radius = 1500,
                          lat = ~lat,
                          lng = ~long,
                          fillColor = pal(colorData),
                          fillOpacity = 1,
-                         color = pal(colorData),
+                         color = "forestgreen",
                          weight = 2,
                          stroke = TRUE,
-                         highlightOptions = highlightOptions(color = "deeppink",
-                                                             fillColor="deeppink",
-                                                             opacity = 1.0,
-                                                             weight = 3,
-                                                             bringToFront = FALSE)) %>%
+                         # highlightOptions = highlightOptions(color = "deeppink",
+                         #                                     fillColor="deeppink",
+                         #                                     opacity = 1.0,
+                         #                                     weight = 3,
+                         #                                     bringToFront = FALSE),
+                         group = 'SoS Site Managed') %>%
+      
+      addLayersControl(
+        baseGroups = c("Satellite imagery", "OpenStreetMap"),
+        overlayGroups = c("SoS Site Managed", "Not site managed")
+      ) %>%
+      
       #bringToFront = FALSE makes it so that selected points stay on the top layer
       addDrawToolbar(
         targetGroup='Selected',
