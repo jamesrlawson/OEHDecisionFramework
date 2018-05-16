@@ -22,7 +22,7 @@
 # dat <- EnvExtract(spdat$lat, spdat$long)
 # 
 # 
- require(cluster) # for gower similarity and pam
+ # require(cluster) # for gower similarity and pam
 # #require(Rtsne) # for t-SNE plot
 # #require(ggplot2) # for visualization
 # variablesUSE <- c("soil", "elev", "rain", "tmax", "rainVar")

@@ -116,7 +116,8 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                         checkboxInput("elev", "Elevation", FALSE),
                                         checkboxInput("soils", "Soil type", FALSE),
                                         numericInput('clusters', 'Cluster count',2,
-                                                     min = 2, max = 9)
+                                                     min = 2, max = 9),
+                                        span(textOutput("envVarPrompt"), style="color:darkred")
                                       ),
                                       
                                       mainPanel(
@@ -417,12 +418,6 @@ server <- function(input, output,session) {
   # list to store the selections for tracking
   data_of_click <- reactiveValues(clickedMarker = list())
   
-  
-  # #get the data ready for cluster analysis
-  # #function for subsetting based on yes and no values user adds
-  # fn <- function(x){
-  #   if(x == "yes")as.character(substitute(x))
-  # }
   #make a vector of environmental variables to use
   variablesUSE <- reactive({
     tmax <- input$tmax
@@ -437,15 +432,21 @@ server <- function(input, output,session) {
     return(vars)
   })
   
+  
+  # prompt user to select data
+  
+  output$envVarPrompt <- renderText({
+    req(length(variablesUSE()) < 2) 
+    paste0('Please select two or more environmental variables')
+  })
+  
   #A variety of metrics exist to help choose the number of clusters to be extracted in a cluster analysis.
   #We use silhouette width, an internal validation metric which is an aggregated measure of how similar an
   #observation is to its own cluster compared its closest neighboring cluster. The metric can range from
   #-1 to 1, where higher values are better.
   output$clustersText <- renderText({
     
-    # req(any(c(input$tmax, input$rain, input$rainVar, input$elev, input$soils) %in% TRUE))
-    req(sum(c(input$tmax, input$rain, input$rainVar, input$elev, input$soils) %in% TRUE) > 1)
-    
+    req(sum(c(input$tmax, input$rain, input$rainVar, input$elev, input$soils) %in% TRUE) > 1) # more than one env var needs to be selected to run the analysis
     
     vars <- variablesUSE()
     Env <- EnvDat()
@@ -470,8 +471,6 @@ server <- function(input, output,session) {
       fitBounds(min(Env$long), min(Env$lat), max(Env$long), max(Env$lat))
 
   })
-  # 
-   
   
   #reactively run the cluster analysis based on the variables and number of clusters selected in the side bar
   clusDat <- reactive({
@@ -514,7 +513,7 @@ server <- function(input, output,session) {
                          lat = ~lat,
                          lng = ~long,
                          fillColor = pal(colorData),
-                         fillOpacity = 1,
+                         fillOpacity = 0.6,
                          color = pal(colorData),
                          weight = 2,
                          stroke = TRUE,
