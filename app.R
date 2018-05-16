@@ -132,6 +132,7 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                           "Elevation" = "elev",
                                           "Soil type" = "soil"
                                         )),
+                                        checkboxInput("incSoS", "Include all SoS sites in hist outputs?", TRUE),
                                         leafletOutput('ClusterPlot'),
                                         plotOutput('SelectedCurrentPlot',height = "600px"),
                                         plotOutput('SelectedFuturePlot',height = "300px"))
@@ -548,8 +549,8 @@ server <- function(input, output,session) {
                          lng = ~long,
                          fillColor = pal(colorData),
                          fillOpacity = 1,
-                         color = "forestgreen",
-                         weight = 2,
+                         color = "#E69F00",
+                         weight = 3,
                          stroke = TRUE,
                          # highlightOptions = highlightOptions(color = "deeppink",
                          #                                     fillColor="deeppink",
@@ -669,28 +670,34 @@ server <- function(input, output,session) {
   selectedLocations <- reactive({
     EnvClus <- clusDat()
     selectedLocations <- subset(EnvClus, locationID %in% data_of_click$clickedMarker)
+    if(nrow(selectedLocations > 0)) {
+      if(input$incSoS) {
+        selectedLocations <- rbind(selectedLocations, EnvClus[!is.na(EnvClus$SiteName),]) %>% dplyr::distinct(locationID, .keep_all=TRUE)
+      }
+    }
+    
     # return this output
     selectedLocations
   })
   
   
-  
   #use the plotEnviroHist funciton to make plots
-   output$SelectedCurrentPlot <- renderPlot({
-     selectedDat <- selectedLocations()
-     if (nrow(selectedDat)<1)#this removes the error message in the plotting function, if no locations selected, no plots
-       return(NULL)
-     selectedDat <- selectedLocations()
-     CurClimPlot(clusDat(),selectedDat)
-   })
-
-   output$SelectedFuturePlot <- renderPlot({
-     selectedDat <- selectedLocations()
-     if (nrow(selectedDat)<1)#this removes the error message in the plotting function, if no locations selected, no plots
-       return(NULL)
-     selectedDat <- selectedLocations()
-     futClimPlot(clusDat(),selectedDat)
-   })
+  output$SelectedCurrentPlot <- renderPlot({
+    selectedDat <- selectedLocations()
+    if (nrow(selectedDat)<1)#this removes the error message in the plotting function, if no locations selected, no plots
+      return(NULL)
+    selectedDat <- selectedLocations()
+    CurClimPlot(clusDat(),selectedDat)
+  })
+  
+  output$SelectedFuturePlot <- renderPlot({
+    selectedDat <- selectedLocations()
+    if (nrow(selectedDat)<1)#this removes the error message in the plotting function, if no locations selected, no plots
+      return(NULL)
+    selectedDat <- selectedLocations()
+    futClimPlot(clusDat(),selectedDat)
+  })
+  
   
   
   
