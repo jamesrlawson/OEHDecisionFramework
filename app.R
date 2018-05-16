@@ -297,19 +297,19 @@ server <- function(input, output,session) {
     # Select site data
     SPsite <- sites[sites$SciName == input$SOSspecies,]
     
+    # merge with SoS mgmt site data
+    coords <- spdat[,c("long","lat")]
+    coordinates(coords) <-c("long","lat")
+    proj4string(coords)<-crs(sites)
+    spdat <- cbind(spdat, sp::over(coords,SPsite,returnList = FALSE))
+    
     # Main map
     leaflet() %>%
       # addProviderTiles(mapType) %>%
-      addProviderTiles(providers$Esri.WorldImagery, group = "Satellite imagery") %>%
+      addProviderTiles(providers$Esri.WorldImagery, group = "Satellite") %>%
       addProviderTiles(providers$OpenStreetMap.Mapnik, group = "OpenStreetMap") %>%
-      addLayersControl(
-        baseGroups = c("Satellite imagery", "OpenStreetMap"),
-        options = layersControlOptions(collapsed = FALSE)
-      ) %>%
+
       #location of managment sites
-      addCircles(spdat$long, spdat$lat,#locations of species
-                 fill = TRUE,
-                 radius = 10)%>%
       addPolygons(data=SPsite, 
                   weight = 3, 
                   color = "red", 
@@ -318,24 +318,49 @@ server <- function(input, output,session) {
                   popup = paste(
                     '<strong>SoS Site:</strong>', capitalize(as.character(SPsite$SiteName)), '<br>'  
                   )) %>%
+      addCircles(data = spdat[is.na(spdat$SiteName),],
+                       ~long, ~lat,#locations of species,
+                       radius = 10,
+                   #    weight = 5,
+                        color = 'blue',
+                        fill = TRUE,
+                        fillColor = 'blue',
+                        opacity = 1,
+                        fillOpacity = 1,
+                       group = 'Not site managed')%>%
+      addCircles(data = spdat[!is.na(spdat$SiteName),],
+                       radius = 10,
+                  #     weight = 5,
+                       ~long, ~lat,#locations of species
+                        color = "#E69F00",
+                        fill = TRUE,
+                        fillColor = "#E69F00",
+                        opacity = 1,
+                        fillOpacity = 1,
+                        group = 'SoS Site Managed') %>%
       addCircles(spdat$long, spdat$lat,#add the points again but make them clear, this allows for popup of info
                  fill = FALSE,
                  color = "#00ff0001",
-                 opacity = 0.7,
+                 opacity = 0,
                  radius = 500,
                  popup = paste(
                    '<strong>Site:</strong>', capitalize(as.character(spdat$Descriptio)), '<br>',
                    '<strong>Accuracy (m):</strong>', spdat$Accuracy,'<br>',
                    '<strong>Date of last observation:</strong>', spdat$DateLast,'<br>',
                    # '<strong>Number of individuals:</strong>', paste(spdat$NumberIndi, "- A value of 0 indicates unknown number of individuals.")))%>%
-                   '<strong>Number of individuals:</strong>', 
-                   ifelse(spdat$NumberIndi==0, 
+                   '<strong>Number of individuals:</strong>',
+                   ifelse(spdat$NumberIndi==0,
                           "Unknown number of individuals",
                           spdat$NumberIndi)))%>%
       #map in bottom left corner
       addMiniMap(tiles = providers$Esri.WorldStreetMap,
                  toggleDisplay = TRUE,
-                 position = "bottomleft")
+                 position = "bottomleft") %>%
+      addLayersControl(
+        baseGroups = c("Satellite", "OpenStreetMap"),
+        overlayGroups = c('SoS Site Managed', 'Not site managed'),
+        options = layersControlOptions(collapsed = FALSE)
+      )
     
   })
   
@@ -452,11 +477,11 @@ server <- function(input, output,session) {
 
     #main map
     leaflet() %>%
-      addProviderTiles(providers$Esri.WorldImagery, group = "Satellite imagery") %>%
+      addProviderTiles(providers$Esri.WorldImagery, group = "Satellite") %>%
       addProviderTiles(providers$OpenStreetMap.Mapnik, group = "OpenStreetMap") %>%
       fitBounds(min(Env$long), min(Env$lat), max(Env$long), max(Env$lat)) %>%
       addLayersControl(
-        baseGroups = c("Satellite imagery", "OpenStreetMap"),
+        baseGroups = c("Satellite", "OpenStreetMap"),
         options = layersControlOptions(collapsed = FALSE)
       )
 
@@ -534,7 +559,7 @@ server <- function(input, output,session) {
                          group = 'SoS Site Managed') %>%
       
       addLayersControl(
-        baseGroups = c("Satellite imagery", "OpenStreetMap"),
+        baseGroups = c("Satellite", "OpenStreetMap"),
         overlayGroups = c("SoS Site Managed", "Not site managed")
       ) %>%
       
