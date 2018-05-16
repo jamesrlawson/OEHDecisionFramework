@@ -58,10 +58,6 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                       
                                       # Show a plot of the observations
                                       mainPanel(
-                                        selectInput("bmap", "Select base map", 
-                                                    choices =  c("OpenStreetMap",
-                                                                 "Satellite imagery"),
-                                                    selected = "OpenStreetMap"),
                                         leafletOutput("mymap"),
                                         h3(strong(div(textOutput("sp_warning"), style="color:red"))),
                                         h4(strong("The species you have selected is:")),
@@ -138,8 +134,7 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                         )),
                                         leafletOutput('ClusterPlot'),
                                         plotOutput('SelectedCurrentPlot',height = "600px"),
-                                        plotOutput('SelectedFuturePlot',height = "300px")
-                                      )
+                                        plotOutput('SelectedFuturePlot',height = "300px"))
                                     )
                                     
                            ),
@@ -276,21 +271,6 @@ server <- function(input, output,session) {
              
   })
   
-  
-  #get base map name
-  
-  getMapType <- reactive({
-    input$bmap
-    if(input$bmap== "OpenStreetMap"){
-      mapType<-"OpenStreetMap.Mapnik"
-    }
-    if(input$bmap== "Satellite imagery"){
-      mapType<-"Esri.WorldImagery"
-    }
-    return(mapType)
-  })
-  
-  
   #  Map of observations  
   output$mymap<- renderLeaflet({
    
@@ -320,7 +300,12 @@ server <- function(input, output,session) {
     # Main map
     leaflet() %>%
       # addProviderTiles(mapType) %>%
-      addProviderTiles(getMapType()) %>%
+      addProviderTiles(providers$Esri.WorldImagery, group = "Satellite imagery") %>%
+      addProviderTiles(providers$OpenStreetMap.Mapnik, group = "OpenStreetMap") %>%
+      addLayersControl(
+        baseGroups = c("Satellite imagery", "OpenStreetMap"),
+        options = layersControlOptions(collapsed = FALSE)
+      ) %>%
       #location of managment sites
       addCircles(spdat$long, spdat$lat,#locations of species
                  fill = TRUE,
@@ -460,15 +445,20 @@ server <- function(input, output,session) {
            "." )
   })
   
-   
-  # base plot
+  
+ # base plot
   output$ClusterPlot <- renderLeaflet({
     Env <- EnvDat()
 
     #main map
     leaflet() %>%
-      addProviderTiles(getMapType()) %>%
-      fitBounds(min(Env$long), min(Env$lat), max(Env$long), max(Env$lat))
+      addProviderTiles(providers$Esri.WorldImagery, group = "Satellite imagery") %>%
+      addProviderTiles(providers$OpenStreetMap.Mapnik, group = "OpenStreetMap") %>%
+      fitBounds(min(Env$long), min(Env$lat), max(Env$long), max(Env$lat)) %>%
+      addLayersControl(
+        baseGroups = c("Satellite imagery", "OpenStreetMap"),
+        options = layersControlOptions(collapsed = FALSE)
+      )
 
   })
   
@@ -509,11 +499,11 @@ server <- function(input, output,session) {
 
     #updating points on map based on selected variable and menu to draw polygons
     proxy %>% addCircles(data = EnvClus,
-                         radius = 3000,
+                         radius = 1500,
                          lat = ~lat,
                          lng = ~long,
                          fillColor = pal(colorData),
-                         fillOpacity = 0.6,
+                         fillOpacity = 1,
                          color = pal(colorData),
                          weight = 2,
                          stroke = TRUE,
@@ -529,13 +519,13 @@ server <- function(input, output,session) {
         markerOptions = FALSE,
         polygonOptions = drawPolygonOptions(shapeOptions=drawShapeOptions(fillOpacity = 0
                                                                           ,color = 'black'
-                                                                          ,weight = 3)),
+                                                                          ,weight = 2)),
         rectangleOptions = drawRectangleOptions(shapeOptions=drawShapeOptions(fillOpacity = 0
                                                                               ,color = 'black'
-                                                                              ,weight = 3)),
+                                                                              ,weight = 2)),
         circleOptions = drawCircleOptions(shapeOptions = drawShapeOptions(fillOpacity = 0
                                                                           ,color = 'black'
-                                                                          ,weight = 3)),
+                                                                          ,weight = 2)),
         editOptions = editToolbarOptions(edit = FALSE, selectedPathOptions = selectedPathOptions()))
   })
   
@@ -544,6 +534,7 @@ server <- function(input, output,session) {
   
   # ############subsetting obseration to get those inside the polygons ##################
   observeEvent(input$ClusterPlot_draw_new_feature,{
+    
     EnvClus <- clusDat()
     ClusCoordinates <- SpatialPointsDataFrame(EnvClus[,c('long', 'lat')] , EnvClus)
     #tells r-shiny that if the user draws a shape return all teh uighe locations based on the location ID
@@ -616,6 +607,13 @@ server <- function(input, output,session) {
       } else {
         # add id
         data_of_click$clickedMarker < - append(data_of_click$clickedMarker, id, 0) } } })
+  
+  output$SelectedLocations <- reactive({
+    EnvClus <- clusDat()
+    SelectedLocations <- subset(EnvClus, locationID %in% data_of_click$clickedMarker)
+    # return this output
+    SelectedLocations
+  })
   
   selectedLocations <- reactive({
     EnvClus <- clusDat()
