@@ -28,6 +28,8 @@
 # variablesUSE <- c("soil", "elev", "rain", "tmax", "rainVar")
 # #clusters<-4
 
+
+# return a df of occurrence lat longs, env data and cluster ID's
 EnvCluserData <- function(Env, variablesUSE, clusters) {
   # get data that is needed
   dat <- Env

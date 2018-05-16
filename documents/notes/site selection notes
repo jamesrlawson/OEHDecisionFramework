@@ -1,0 +1,23 @@
+# site selection notes
+
+2016 ML/CL report:
+
+Recognition that climate change is likely to pose a significant threat to global biodiversity has resulted in the development of government policies and strategies incorporating climate change adaptation into conservation actions (DECCW 2010; Natural Resource Management Ministerial Council (NRMMC) 2004; NRMMC 2010). Many of the suggested strategies are not targeted towards specific species and operate at broad spatial scales (i.e. landscape, continental). They aim to maximise multiple species’ adaptive capacity and resilience and include a wide range of management actions. These include increasing the area of land within reserve systems (Lawler 2009; NRMMC 2010), 
+
+using predictions of future climates and species distributions to guide selection of new protected areas (Bellard et al. 2012; Department of Environment and Climate Change NSW (DECC) 2007; Gillson et al. 2013), protecting likely climate refugia (DECCW 2010; Gillson et al. 2013; Groves et al. 2012; Mawdsley et al. 2009), conserving the full range of environmental heterogeneity/habitat diversity within reserve systems (Bellard et al. 2012; DECCW 2010; Dunlop et al. 2012; Gillson et al. 2013; National Fish, Wildlife and Plants Climate Adaptation Partnership (NFWP) 2012),
+
+
+Sharafi et al 2012
+
+In our analysis, priorities are generated in a two-level hierarchy so that highest priorities go into presently existing conservation areas and lower priorities to the rest of the landscape. Then, the most highly ranked areas outside present protected areas become prioritized so that they cover as efficiently as possible those combinations of environmental features that are poorly represented (gaps) inside the present reserve system.
+
+
+Van Bruegel et al 2015
+
+S2 Appendix. Environmental representation. 
+The multivariate environmental similarity (MES) calculation represents how similar a point is to a reference set of points (N), with respect to a set of predictor variables (V1, V2, ...). The similarity of a point P to N with respect to variable V is computed as the deviation from the median of V in N. The following is based on the explanation by Elith et al. [1]. Suppose pi is the value of variable V at point P, mini the minimum value of V in N, maxi the maximum value of V in N, and Vm the median of V in N. The deviation is calculated as:
+1)	2 * the percentage of N with V that is smaller than pi if pi ≤ Vm and pi > mini.
+2)	2 * the percentage of N where V is larger than pi if pi > Vm and pi < maxi.
+3)	(pi – mini) / (maxi – mini) * 100 if pi < mini
+4)	(maxi – pi) / (maxi –mini) * 100 if pi > maxi
+The final multivariate similarity for P is computed as the minimum of the similarity values with respect to each of the variables. Amongst others uses MES is employed to evaluate the validity of extrapolating environmental distribution models to new areas or novel climates. 

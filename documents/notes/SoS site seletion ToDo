@@ -1,4 +1,4 @@
-# SoS site seletion to do
+#SoS site seletion to do
 
 1 work out what Daisy's code is trying to do
 2 research representativeness & get thoughts into a document
@@ -6,4 +6,22 @@
 4 think about what to say to James BB
 5 think about the AOO revision
 6 think about the summary page
+- Daisy has already had a think about this
+- What I'd like to do is present a ranking of populations to add, so SoS can choose what sites to add given the optimal number calculated by Iadine/Sam's group
 
+7 get in touch with Iadine/Sam re: numbers of sites to add
+
+
+
+How many clusters are already represented within SoS sites?
+
+Is there a way to show what is the biggest differentiator between clusters? 
+- or, which variable is responsible for adjacent populations belonging to different clusters?
+
+Is there a way to quantify the distinctivness between clusters?
+- e.g. cluster b is more different from cluster a than cluster c is from cluster b...
+
+There might not even be any reason to force a user to manually select sites?
+- could just output the results of the cluster analysis in a table...
+- SoS could then select which specific populations or AOO pixels they'd want to protect
+- this might be based on other factors, such as whether the population is already in a reserve, what the population size is, proximity to other operations etc.
