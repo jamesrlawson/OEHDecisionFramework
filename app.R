@@ -84,8 +84,7 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                     br(),  
                                     selectInput("pop_number", "Number of populations:", choices = NULL),
                                     br(), 
-                                    strong("*For the purposes of this decision framework, where populations total less than five, it is recommended that all sites are managed.") 
-                                    
+                                    span(strong(textOutput('tooFewPopns'), style="color:darkred"))
                            ) # Sidebar with where you load csv file and select columns 
                            
                            ,
@@ -356,7 +355,9 @@ server <- function(input, output,session) {
       #map in bottom left corner
       addMiniMap(tiles = providers$Esri.WorldStreetMap,
                  toggleDisplay = TRUE,
-                 position = "bottomleft") %>%
+                 position = "bottomleft",
+                 width=100,
+                 height=100) %>%
       addLayersControl(
         baseGroups = c("Satellite", "OpenStreetMap"),
         overlayGroups = c('SoS Site Managed', 'Not site managed'),
@@ -374,12 +375,13 @@ server <- function(input, output,session) {
   updateSelectInput(session, "pop_number", "Number of populations:", 
                     choices = popNumber, selected="")
   
+  output$tooFewPopns <- renderText({
+    if(input$pop_number == "< 5") {
+     print("For species with less than 5 total populations, it is recommended that all sites are managed.")
+    }
+  })
   
-  
-  
-  
-  
-  
+ 
   
   ################ 3. Environmental variation ###########
   
