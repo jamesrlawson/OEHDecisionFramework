@@ -464,6 +464,10 @@ server <- function(input, output,session) {
     vars <- variablesUSE()
     Env <- EnvDat()
     clustersSuggested <- ClusterNumbers(Env, vars)
+    
+    # set clusters numericInput (input$clusters) default value == clustersSuggested[1]
+    updateNumericInput(session, 'clusters', value = clustersSuggested[1])
+    
     paste0("The best three suggested numbers of clusters,",
            " based on a measure of how similar each observation is to",
            " its own cluster compared its closest neighbouring cluster, are ",
@@ -471,8 +475,13 @@ server <- function(input, output,session) {
            ", and ",
            clustersSuggested[3],
            "." )
+    
+
+    
   })
   
+  
+
   
  # base plot
   output$ClusterPlot <- renderLeaflet({
