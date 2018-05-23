@@ -35,6 +35,11 @@ EnvExtract<-function(lat,long){
   dat$NarClimfRain<-extract(raster("AppEnvData/NarClimRain.asc"),coords)
   dat$NarClimfTmax<-extract(raster("AppEnvData/NarClimTmax.asc"),coords)
   
+  # get actual predictions for tmax and rainfall
+  
+  dat$tmax_future <- dat$tmax + dat$NarClimfTmax
+  dat$rain_future <- dat$rain * (1 + (dat$NarClimfRain/100))
+  
   #reclassify rainfall variability - ranges defined on BOM website
   dat$rainVar[dat$rainVar > 0 & dat$rainVar <= 0.5] <- "Low"
   dat$rainVar[dat$rainVar > 0.5 & dat$rainVar <= 0.75] <- "Low to mod"

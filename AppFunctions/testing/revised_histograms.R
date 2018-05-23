@@ -60,7 +60,9 @@ p5<-ggplot(allDat_long, aes(fill=loc))+
 #  ggtitle("Change in Avg. annual Tmax")+
   # create 
   labs(x=expression(~degree~C),y="Count") +
-  facet_grid(time ~ .)
+  facet_grid(time ~ .) +
+  xlim(min(raster("AppEnvData/tmax.asc")[], na.rm=TRUE), max(raster("AppEnvData/tmax.asc")[], na.rm=TRUE))
+
 p5
 
 
@@ -80,5 +82,6 @@ p6<-ggplot(allDat_long, aes(fill=loc))+
   #  ggtitle("Change in Avg. annual Tmax")+
   # create 
   labs(x="Rainfall (mm)", y = "Count") +
-  facet_grid(time ~ .)
+  facet_grid(time ~ .) +
+  xlim(min(raster("AppEnvData/rain.asc")[], na.rm=TRUE), max(raster("AppEnvData/rain.asc")[]), na.rm=TRUE)
 p6

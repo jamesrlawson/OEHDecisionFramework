@@ -125,7 +125,54 @@ CurClimPlot<-function(allSite,sosSite){
   # legend<-g_legend(p6a)
   
   
-  return(multiplot(p1, p4, p2, p5, p3,legend,cols=3))
+  # facet
+  
+  
+  #browser()
+  
+  allDat_long <- tidyr::gather(allDat, 'time', 'val', c('tmax', 'tmax_future'))
+  allDat_long$cat <- paste(allDat_long$loc, allDat_long$time, sep = "-")
+  
+  tmax.ras <- raster::raster("AppEnvData/tmax.asc")
+  
+  p6<-ggplot(allDat_long, aes(fill=loc))+
+    geom_rect(data= subset(allDat_long, time == 'tmax_future')[1,], aes(xmin=max(allDat$tmax), xmax=(round(max(allDat$tmax_future)/0.5)*0.5)+0.25, ymin=-Inf, ymax=Inf), fill='red', alpha = 0.4, inherit.aes = FALSE) +
+    geom_histogram(aes(val), binwidth=.50, position="stack", colour = 'black')+
+    # geom_histogram(binwidth=.25, position="identity",colour="black")+
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank(),
+          axis.line = element_line(colour = "black"))+
+    scale_fill_manual(values=c("#999999", "#E69F00"))+
+    #  ggtitle("Change in Avg. annual Tmax")+
+    # create 
+    labs(x=expression(~degree~C),y="Count") +
+    xlim(c(min(tmax.ras[], na.rm=TRUE), max(tmax.ras[], na.rm=TRUE))) +
+    facet_grid(time ~ .)
+  
+
+  allDat_long <- tidyr::gather(allDat, 'time', 'val', c('rain', 'rain_future'))
+  allDat_long$cat <- paste(allDat_long$loc, allDat_long$time, sep = "-")
+  rain.ras <- raster("AppEnvData/rain.asc")
+  
+  p7<-ggplot(allDat_long, aes(fill=loc))+
+    geom_rect(data= subset(allDat_long, time == 'rain_future')[1,], aes(xmin=max(allDat$rain), xmax=(round(max(allDat$rain_future)/50)*50)+25, ymin=-Inf, ymax=Inf), fill='red', alpha = 0.4, inherit.aes = FALSE) +
+    geom_histogram(aes(val), binwidth=50, position="stack", colour = 'black')+
+    # geom_histogram(binwidth=.25, position="identity",colour="black")+
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank(),
+          axis.line = element_line(colour = "black"))+
+    scale_fill_manual(values=c("#999999", "#E69F00"))+
+    #  ggtitle("Change in Avg. annual Tmax")+
+    # create 
+    labs(x="Rainfall (mm)", y = "Count") +
+    xlim(c(min(rain.ras[], na.rm=TRUE), max(rain.ras[], na.rm=TRUE))) +
+    facet_grid(time ~ .) 
+
+  
+  
+  return(multiplot(p6, p4, p7, p5, p3,legend,cols=3))
 
 }
 
