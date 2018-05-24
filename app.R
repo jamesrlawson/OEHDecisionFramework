@@ -393,6 +393,16 @@ server <- function(input, output,session) {
       
       req(input$SOSspecies, input$long_column, input$lat_column)
       
+      print(input$SOSspecies)
+      
+      # if the data for acabau has already been saved to .rds, read that instead of running slow EnvExtract()
+      if(input$SOSspecies == 'Acacia baueri subsp. aspera') {
+        if(file.exists('acabau.rds')) {
+          print('loading acabau data from .rds')
+          dat <- readr::read_rds('acabau.rds')
+        }
+      } else { 
+      
       spdat <- spData()
       spdat$lat <- spdat[, input$lat_column]
       spdat$long <- spdat[, input$long_column]
@@ -406,7 +416,19 @@ server <- function(input, output,session) {
       sp <- input$SOSspecies
       managmentSite <- sites[sites$SciName == sp,]
       dat <- cbind(dat, sp::over(coords,managmentSite,returnList = FALSE))
+      
+      }
+      
+      # if file doesn't exist already, write acabau env data to an .rds
+      if(input$SOSspecies == 'Acacia baueri subsp. aspera') {
+        if(!file.exists('acabau.rds')) {
+          print('writing acabau data to file')
+          readr::write_rds(dat, 'acabau.rds')
+        }
+      }
+      
       return(dat)
+      
     })
   })
   
