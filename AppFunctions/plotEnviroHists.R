@@ -56,7 +56,7 @@ CurClimPlot<-function(allSite,sosSite){
   
 
   
-  #### rainall
+  #### rainfall
   p2<-ggplot(allDat, aes(x=rain,y=..count.., fill = loc))+
     geom_histogram(binwidth=50, position="identity", colour="black")+
     theme(panel.grid.major = element_blank(), 
@@ -71,11 +71,11 @@ CurClimPlot<-function(allSite,sosSite){
   #rainfall variability
   
   p3<-ggplot(allDat, aes( fill = loc))+
-    geom_bar( aes(rainVar), colour="black") +
+    geom_bar( aes(rainVar), colour=NA) +
     theme(panel.grid.major = element_blank(), 
           panel.grid.minor = element_blank(),
           panel.background = element_blank(),
-          legend.position="right",
+          legend.position="none",
           axis.text.x=element_text(angle=45,hjust=1,vjust=0.5),
           axis.line = element_line(colour = "black"))+
     scale_fill_manual(labels = c("All locations", "Mngm. sites"), values=c("#999999", "#E69F00"))+
@@ -85,7 +85,7 @@ CurClimPlot<-function(allSite,sosSite){
   
   #elevation
   p4<-ggplot(allDat, aes(x=elev, fill = loc))+
-    geom_histogram(binwidth=100,  position="identity", colour="black")+
+    geom_histogram(binwidth=100,  position="identity", colour=NA)+
     theme(panel.grid.major = element_blank(), 
           panel.grid.minor = element_blank(),
           panel.background = element_blank(), 
@@ -100,7 +100,7 @@ CurClimPlot<-function(allSite,sosSite){
   #soil types
   
   p5<-ggplot(allDat, aes( fill = loc))+
-        geom_bar(aes(soil),position = position_identity(), colour="black") +
+        geom_bar(aes(soil),position = position_identity(), colour=NA) +
         theme(panel.grid.major = element_blank(), 
                     panel.grid.minor = element_blank(),
                     panel.background = element_blank(),
@@ -136,18 +136,18 @@ CurClimPlot<-function(allSite,sosSite){
   tmax.ras <- raster::raster("AppEnvData/tmax.asc")
   
   p6<-ggplot(allDat_long, aes(fill=loc))+
+    geom_histogram(aes(val), binwidth=.50, position="stack", colour = NA)+
     geom_rect(data= subset(allDat_long, time == 'tmax_future')[1,], aes(xmin=max(allDat$tmax), xmax=(round(max(allDat$tmax_future)/0.5)*0.5)+0.25, ymin=-Inf, ymax=Inf), fill='red', alpha = 0.4, inherit.aes = FALSE) +
-    geom_histogram(aes(val), binwidth=.50, position="stack", colour = 'black')+
     # geom_histogram(binwidth=.25, position="identity",colour="black")+
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           panel.background = element_blank(),
-          axis.line = element_line(colour = "black"))+
+          axis.line = element_line(colour = "black"),
+          legend.position = 'none')+
     scale_fill_manual(values=c("#999999", "#E69F00"))+
-    #  ggtitle("Change in Avg. annual Tmax")+
-    # create 
+    ggtitle("Current and future (2069) daily max temp.")+
     labs(x=expression(~degree~C),y="Count") +
-    xlim(c(min(tmax.ras[], na.rm=TRUE), max(tmax.ras[], na.rm=TRUE))) +
+    # xlim(c(min(tmax.ras[], na.rm=TRUE), max(tmax.ras[], na.rm=TRUE))) +
     facet_grid(time ~ .)
   
 
@@ -156,23 +156,32 @@ CurClimPlot<-function(allSite,sosSite){
   rain.ras <- raster("AppEnvData/rain.asc")
   
   p7<-ggplot(allDat_long, aes(fill=loc))+
+    geom_histogram(aes(val), binwidth=50, position="stack", colour = NA)+
     geom_rect(data= subset(allDat_long, time == 'rain_future')[1,], aes(xmin=max(allDat$rain), xmax=(round(max(allDat$rain_future)/50)*50)+25, ymin=-Inf, ymax=Inf), fill='red', alpha = 0.4, inherit.aes = FALSE) +
-    geom_histogram(aes(val), binwidth=50, position="stack", colour = 'black')+
     # geom_histogram(binwidth=.25, position="identity",colour="black")+
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           panel.background = element_blank(),
-          axis.line = element_line(colour = "black"))+
+          axis.line = element_line(colour = "black"),
+          legend.position = 'none')+
     scale_fill_manual(values=c("#999999", "#E69F00"))+
-    #  ggtitle("Change in Avg. annual Tmax")+
-    # create 
+    ggtitle("Current and future (2069) annual rainfall")+
     labs(x="Rainfall (mm)", y = "Count") +
-    xlim(c(min(rain.ras[], na.rm=TRUE), max(rain.ras[], na.rm=TRUE))) +
+    # xlim(c(min(rain.ras[], na.rm=TRUE), max(rain.ras[], na.rm=TRUE))) +
     facet_grid(time ~ .) 
-
   
+   # return(multiplot(p6, p4, p5, p7, p3,cols=2))
   
-  return(multiplot(p6, p4, p7, p5, p3,legend,cols=3))
+  gs <- c(p6,p7,p3,p4,p5)
+  
+  lay <- rbind(c(1,2),
+               c(1,2),
+               c(1,2),
+               c(3,4),
+               c(3,4),
+               c(5,NA),
+               c(5,NA))
+  return(grid.arrange(p6,p7,p3,p4,p5, layout_matrix = lay))
 
 }
 

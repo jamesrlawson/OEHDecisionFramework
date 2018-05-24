@@ -69,10 +69,11 @@ p5
 allDat_long <- tidyr::gather(allDat, 'time', 'val', c('rain', 'rain_future'))
 allDat_long$cat <- paste(allDat_long$loc, allDat_long$time, sep = "-")
 
+#bla <- dplyr::distinct(allDat_long, lat, long, time, .keep_all=TRUE)
 
 p6<-ggplot(allDat_long, aes(fill=loc))+
-  geom_rect(data= subset(allDat_long, time == 'rain_future')[1,], aes(xmin=max(allDat$rain), xmax=(round(max(allDat$rain_future)/50)*50)+25, ymin=-Inf, ymax=Inf), fill='red', alpha = 0.4, inherit.aes = FALSE) +
-  geom_histogram(aes(val), binwidth=50, position="stack", colour = 'black')+
+  # geom_rect(data= subset(allDat_long, time == 'rain_future')[1,], aes(xmin=max(allDat$rain), xmax=(round(max(allDat$rain_future)/50)*50)+25, ymin=-Inf, ymax=Inf), fill='red', alpha = 0.4, inherit.aes = FALSE) +
+  geom_histogram(aes(val), binwidth=50, position="stack", colour = NA)+
   # geom_histogram(binwidth=.25, position="identity",colour="black")+
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -82,6 +83,11 @@ p6<-ggplot(allDat_long, aes(fill=loc))+
   #  ggtitle("Change in Avg. annual Tmax")+
   # create 
   labs(x="Rainfall (mm)", y = "Count") +
-  facet_grid(time ~ .) +
-  xlim(min(raster("AppEnvData/rain.asc")[], na.rm=TRUE), max(raster("AppEnvData/rain.asc")[]), na.rm=TRUE)
+  geom_rect(data= subset(allDat_long, time == 'rain_future')[1,], aes(xmin=max(allDat$rain), xmax=(round(max(allDat$rain_future)/50)*50)+25, ymin=-Inf, ymax=Inf), fill='red', alpha = 0.4, inherit.aes = FALSE) +
+  facet_grid(time ~ .)# +
+#  xlim(min(raster("AppEnvData/rain.asc")[], na.rm=TRUE), max(raster("AppEnvData/rain.asc")[]), na.rm=TRUE)
 p6
+
+
+
+bl <- ggplot(allDat_long, aes(x=val, y=c(0))) + geom_point()
