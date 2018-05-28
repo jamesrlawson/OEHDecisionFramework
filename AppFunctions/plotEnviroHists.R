@@ -39,7 +39,6 @@ CurClimPlot<-function(allSite,sosSite){
   sosSite$loc <- "sos"
   allDat <- rbind(allSite, sosSite)
 
-  
 ###tmax  
 
   

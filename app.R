@@ -157,6 +157,10 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
 
 server <- function(input, output,session) {
   
+  ############ misc definitions ##############
+  
+  projAEA <- crs("+init=epsg:3577 +proj=aea +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=132 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m")
+  
   ############ 1. Observations ###############  
   
   info <- eventReactive(input$uploadedfile, {
@@ -271,6 +275,62 @@ server <- function(input, output,session) {
              
   })
   
+  AOO_degs <- reactive({
+    
+    req(input$lat_column, input$long_column)
+    
+    spdat <- spData()
+    spdat$lat <- spdat[, input$lat_column]
+    spdat$long <- spdat[, input$long_column]
+    
+    r_ext <- extent(c(min(spdat[,'long']), max(spdat[,'long']), c(min(spdat[,'lat']), max(spdat[,'lat']))))
+    
+    spcoords <- spdat %>%
+      dplyr::select(long, lat) %>%
+      sp::SpatialPoints(CRS("+init=epsg:4326"))
+    
+    r <- raster::raster(resolution = 0.5, ext = r_ext, crs = CRS("+init=epsg:4326"))
+    r %<>% raster::projectRaster(crs = CRS("+init=epsg:4326"), res = 0.02151428, method = 'bilinear')
+    
+    rasterAoo <- spcoords %>% raster::rasterize(r, fun = mean)
+    
+    rasterAoo_poly<- rasterToPolygons(rasterAoo) %>%
+      sf::st_as_sf(.)
+    
+    return(rasterAoo_poly)
+    
+  })
+  
+  
+  AOO <- reactive({
+    
+    req(input$lat_column, input$long_column)
+    
+    spdat <- spData()
+    spdat$lat <- spdat[, input$lat_column]
+    spdat$long <- spdat[, input$long_column]
+    
+    r_ext <- extent(spdat)
+    
+    spcoords <- spdat %>%
+      dplyr::select(long, lat) %>%
+      sp::SpatialPoints(CRS("+init=epsg:4326")) %>%
+      sp::spTransform(CRS("+init=epsg:3577"))
+    
+    r <- raster::raster(ext = r_ext)
+    r[] <- 0
+    r %<>% raster::projectRaster(crs = CRS("+init=epsg:3577"), res = 2000, method = 'bilinear') # from border to center method
+    
+    rasterAoo <- SpatialPoints(spcoords, CRS("+init=epsg:3577")) %>% raster::rasterize(r, fun = mean)
+    
+    rasterAoo_poly<- rasterToPolygons(rasterAoo) %>%
+       sf::st_as_sf(.)  %>%
+       sf::st_transform(4326)
+    
+    return(rasterAoo_poly)
+    
+  })
+
   #  Map of observations  
   output$mymap<- renderLeaflet({
    
@@ -303,24 +363,46 @@ server <- function(input, output,session) {
     proj4string(coords)<-crs(sites)
     spdat <- cbind(spdat, sp::over(coords,SPsite,returnList = FALSE))
     
+    epsg3577 <- leafletCRS(crsClass = "L.Proj.CRS", code = "epsg:3577",
+                           proj4def = "+init=epsg:3577 +proj=aea +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=132 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m",
+                           resolutions = c(65536, 32768, 16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64, 32),
+                           origin = c(0, 0)
+    )
+    
+
+    
     # Main map
-    leaflet() %>%
+    leaflet() %>%#options = leafletOptions(worldCopyJump = F, crs = epsg3577)) %>%
+
       # addProviderTiles(mapType) %>%
       addProviderTiles(providers$Esri.WorldImagery, group = "Satellite") %>%
       addProviderTiles(providers$OpenStreetMap.Mapnik, group = "OpenStreetMap") %>%
 
+      # addPolygons(data=AOO(),
+      #             weight = 3,
+      #             color = "red",
+      #             fillColor = "red",
+      #             opacity = 0.5) %>%
+      
+      # addPolygons(data=AOO_degs(),
+      #             weight = 3,
+      #             color = "blue",
+      #             fillColor = "blue",
+      #             opacity = 0.5) %>%
+      
+
       #location of managment sites
-      addPolygons(data=SPsite, 
-                  weight = 3, 
-                  color = "red", 
-                  fillColor = "red", 
+      addPolygons(data=SPsite,
+                  weight = 3,
+                  color = "red",
+                  fillColor = "red",
                   opacity = 0.5,
                   popup = paste(
-                    '<strong>SoS Site:</strong>', capitalize(as.character(SPsite$SiteName)), '<br>'  
+                    '<strong>SoS Site:</strong>', capitalize(as.character(SPsite$SiteName)), '<br>'
                   )) %>%
       addCircles(data = spdat[is.na(spdat$SiteName),],
                        ~long, ~lat,#locations of species,
-                       radius = 10,
+                       radius = 1,
                    #    weight = 5,
                         color = 'blue',
                         fill = TRUE,
@@ -329,7 +411,7 @@ server <- function(input, output,session) {
                         fillOpacity = 1,
                        group = 'Not site managed')%>%
       addCircles(data = spdat[!is.na(spdat$SiteName),],
-                       radius = 10,
+                       radius = 1,
                   #     weight = 5,
                        ~long, ~lat,#locations of species
                         color = "#E69F00",
@@ -338,20 +420,20 @@ server <- function(input, output,session) {
                         opacity = 1,
                         fillOpacity = 1,
                         group = 'SoS Site Managed') %>%
-      addCircles(spdat$long, spdat$lat,#add the points again but make them clear, this allows for popup of info
-                 fill = FALSE,
-                 color = "#00ff0001",
-                 opacity = 0,
-                 radius = 500,
-                 popup = paste(
-                   '<strong>Site:</strong>', capitalize(as.character(spdat$Descriptio)), '<br>',
-                   '<strong>Accuracy (m):</strong>', spdat$Accuracy,'<br>',
-                   '<strong>Date of last observation:</strong>', spdat$DateLast,'<br>',
-                   # '<strong>Number of individuals:</strong>', paste(spdat$NumberIndi, "- A value of 0 indicates unknown number of individuals.")))%>%
-                   '<strong>Number of individuals:</strong>',
-                   ifelse(spdat$NumberIndi==0,
-                          "Unknown number of individuals",
-                          spdat$NumberIndi)))%>%
+      # addCircles(spdat$long, spdat$lat,#add the points again but make them clear, this allows for popup of info
+      #            fill = FALSE,
+      #            color = "#00ff0001",
+      #            opacity = 0,
+      #            radius = 500,
+      #            popup = paste(
+      #              '<strong>Site:</strong>', capitalize(as.character(spdat$Descriptio)), '<br>',
+      #              '<strong>Accuracy (m):</strong>', spdat$Accuracy,'<br>',
+      #              '<strong>Date of last observation:</strong>', spdat$DateLast,'<br>',
+      #              # '<strong>Number of individuals:</strong>', paste(spdat$NumberIndi, "- A value of 0 indicates unknown number of individuals.")))%>%
+      #              '<strong>Number of individuals:</strong>',
+      #              ifelse(spdat$NumberIndi==0,
+      #                     "Unknown number of individuals",
+      #                     spdat$NumberIndi)))%>%
       #map in bottom left corner
       addMiniMap(tiles = providers$Esri.WorldStreetMap,
                  toggleDisplay = TRUE,
@@ -395,38 +477,44 @@ server <- function(input, output,session) {
       
       print(input$SOSspecies)
       
-      # if the data for acabau has already been saved to .rds, read that instead of running slow EnvExtract()
-      if(input$SOSspecies == 'Acacia baueri subsp. aspera') {
-        if(file.exists('acabau.rds')) {
-          print('loading acabau data from .rds')
-          dat <- readr::read_rds('acabau.rds')
-        }
-      } else { 
+      # # if the data for acabau has already been saved to .rds, read that instead of running slow EnvExtract()
+      # if(input$SOSspecies == 'Acacia baueri subsp. aspera') {
+      #   if(file.exists('acabau.rds')) {
+      #     print('loading acabau data from .rds')
+      #     dat <- readr::read_rds('acabau.rds')
+      #   }
+      # } else { 
       
       spdat <- spData()
-      spdat$lat <- spdat[, input$lat_column]
-      spdat$long <- spdat[, input$long_column]
-      dat <- EnvExtract(spdat$lat,spdat$long)
+
+     #dat <- EnvExtract(spdat$lat,spdat$long)
+     dat <- EnvExtract(spdat)
       
       #select site data
-      coords <- dat[,c("long","lat")]
-      coordinates(coords) <-c("long","lat")
-      proj4string(coords)<-crs(sites)
+      # coords <- dat[,c("long","lat")]
+      # coordinates(coords) <-c("long","lat")
+      # proj4string(coords)<-crs(sites)
       
+      sp.AOO_poly <- spData() %>% getAOOraster(.,1) %>% rasterToPolygons(.)
+
       sp <- input$SOSspecies
-      managmentSite <- sites[sites$SciName == sp,]
-      dat <- cbind(dat, sp::over(coords,managmentSite,returnList = FALSE))
+      managmentSite <- sites[sites$SciName == sp,] %>% spTransform(.,projAEA)
+      dat <- cbind(dat, sp::over(sp.AOO_poly,managmentSite,returnList = FALSE))
+
+      # the problem now is I'm not counting observations - I'm counting gridcells, so I can't do an over() with coords
+      # not sure why the over with sp.AOO_poly doesnt work yet
       
-      }
+      # }
       
-      # if file doesn't exist already, write acabau env data to an .rds
-      if(input$SOSspecies == 'Acacia baueri subsp. aspera') {
-        if(!file.exists('acabau.rds')) {
-          print('writing acabau data to file')
-          readr::write_rds(dat, 'acabau.rds')
-        }
-      }
+      # # if file doesn't exist already, write acabau env data to an .rds
+      # if(input$SOSspecies == 'Acacia baueri subsp. aspera') {
+      #   if(!file.exists('acabau.rds')) {
+      #     print('writing acabau data to file')
+      #     readr::write_rds(dat, 'acabau.rds')
+      #   }
+      # }
       
+      knitr::kable(dat)
       return(dat)
       
     })
