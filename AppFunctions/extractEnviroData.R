@@ -14,7 +14,7 @@ require(rgdal)
 
 ######## get 2km grid AOO, with optimised grid initiation point #########
 
-getAOOraster <- function(spdat, Cell_size_AOO=2) {
+getAOOraster <- function(spdat, Cell_size_AOO=1) {
   
   # reproject coordinates to AEA
   
@@ -69,9 +69,11 @@ env.reproj <- function(ras, AOOraster) {
 }
 
 
-EnvExtract<-function(spdat){
+EnvExtract<-function(spdat, cell){
   
   projAEA <- crs("+init=epsg:3577 +proj=aea +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=132 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m")
+  
+  print(paste0('length of spdat is ',nrow(spdat)))
   
  # spdata <- spdat()
   sp.AOO <- getAOOraster(spdat, 1)
@@ -79,6 +81,7 @@ EnvExtract<-function(spdat){
   sp.AOO_poly<- rasterToPolygons(sp.AOO)
   
   dat <- sp.AOO_poly %>% as.data.frame(.)
+  print(paste0('length of sp.AOO_poly is ',nrow(dat)))
   
   #prep point data
   P4S <- CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")

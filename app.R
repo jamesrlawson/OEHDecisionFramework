@@ -221,6 +221,7 @@ server <- function(input, output,session) {
     if(isTruthy(input$species) && isTruthy(input$spec_column)){
       f$SPECIES <- f[, input$spec_column]
       f2<- subset(f,SPECIES == input$species)
+      print(nrow(f2))
       return(f2)
     } else {
       return(NULL)
@@ -275,61 +276,61 @@ server <- function(input, output,session) {
              
   })
   
-  AOO_degs <- reactive({
-    
-    req(input$lat_column, input$long_column)
-    
-    spdat <- spData()
-    spdat$lat <- spdat[, input$lat_column]
-    spdat$long <- spdat[, input$long_column]
-    
-    r_ext <- extent(c(min(spdat[,'long']), max(spdat[,'long']), c(min(spdat[,'lat']), max(spdat[,'lat']))))
-    
-    spcoords <- spdat %>%
-      dplyr::select(long, lat) %>%
-      sp::SpatialPoints(CRS("+init=epsg:4326"))
-    
-    r <- raster::raster(resolution = 0.5, ext = r_ext, crs = CRS("+init=epsg:4326"))
-    r %<>% raster::projectRaster(crs = CRS("+init=epsg:4326"), res = 0.02151428, method = 'bilinear')
-    
-    rasterAoo <- spcoords %>% raster::rasterize(r, fun = mean)
-    
-    rasterAoo_poly<- rasterToPolygons(rasterAoo) %>%
-      sf::st_as_sf(.)
-    
-    return(rasterAoo_poly)
-    
-  })
-  
-  
-  AOO <- reactive({
-    
-    req(input$lat_column, input$long_column)
-    
-    spdat <- spData()
-    spdat$lat <- spdat[, input$lat_column]
-    spdat$long <- spdat[, input$long_column]
-    
-    r_ext <- extent(spdat)
-    
-    spcoords <- spdat %>%
-      dplyr::select(long, lat) %>%
-      sp::SpatialPoints(CRS("+init=epsg:4326")) %>%
-      sp::spTransform(CRS("+init=epsg:3577"))
-    
-    r <- raster::raster(ext = r_ext)
-    r[] <- 0
-    r %<>% raster::projectRaster(crs = CRS("+init=epsg:3577"), res = 2000, method = 'bilinear') # from border to center method
-    
-    rasterAoo <- SpatialPoints(spcoords, CRS("+init=epsg:3577")) %>% raster::rasterize(r, fun = mean)
-    
-    rasterAoo_poly<- rasterToPolygons(rasterAoo) %>%
-       sf::st_as_sf(.)  %>%
-       sf::st_transform(4326)
-    
-    return(rasterAoo_poly)
-    
-  })
+  # AOO_degs <- reactive({
+  #   
+  #   req(input$lat_column, input$long_column)
+  #   
+  #   spdat <- spData()
+  #   spdat$lat <- spdat[, input$lat_column]
+  #   spdat$long <- spdat[, input$long_column]
+  #   
+  #   r_ext <- extent(c(min(spdat[,'long']), max(spdat[,'long']), c(min(spdat[,'lat']), max(spdat[,'lat']))))
+  #   
+  #   spcoords <- spdat %>%
+  #     dplyr::select(long, lat) %>%
+  #     sp::SpatialPoints(CRS("+init=epsg:4326"))
+  #   
+  #   r <- raster::raster(resolution = 0.5, ext = r_ext, crs = CRS("+init=epsg:4326"))
+  #   r %<>% raster::projectRaster(crs = CRS("+init=epsg:4326"), res = 0.02151428, method = 'bilinear')
+  #   
+  #   rasterAoo <- spcoords %>% raster::rasterize(r, fun = mean)
+  #   
+  #   rasterAoo_poly<- rasterToPolygons(rasterAoo) %>%
+  #     sf::st_as_sf(.)
+  #   
+  #   return(rasterAoo_poly)
+  #   
+  # })
+  # 
+  # 
+  # AOO <- reactive({
+  #   
+  #   req(input$lat_column, input$long_column)
+  #   
+  #   spdat <- spData()
+  #   spdat$lat <- spdat[, input$lat_column]
+  #   spdat$long <- spdat[, input$long_column]
+  #   
+  #   r_ext <- extent(spdat)
+  #   
+  #   spcoords <- spdat %>%
+  #     dplyr::select(long, lat) %>%
+  #     sp::SpatialPoints(CRS("+init=epsg:4326")) %>%
+  #     sp::spTransform(CRS("+init=epsg:3577"))
+  #   
+  #   r <- raster::raster(ext = r_ext)
+  #   r[] <- 0
+  #   r %<>% raster::projectRaster(crs = CRS("+init=epsg:3577"), res = 2000, method = 'bilinear') # from border to center method
+  #   
+  #   rasterAoo <- SpatialPoints(spcoords, CRS("+init=epsg:3577")) %>% raster::rasterize(r, fun = mean)
+  #   
+  #   rasterAoo_poly<- rasterToPolygons(rasterAoo) %>%
+  #      sf::st_as_sf(.)  %>%
+  #      sf::st_transform(4326)
+  #   
+  #   return(rasterAoo_poly)
+  #   
+  # })
 
   #  Map of observations  
   output$mymap<- renderLeaflet({
@@ -486,7 +487,9 @@ server <- function(input, output,session) {
       # } else { 
       
       spdat <- spData()
-
+      
+      print(paste0('length of spdat is ',nrow(spdat)))
+      
      #dat <- EnvExtract(spdat$lat,spdat$long)
      dat <- EnvExtract(spdat)
       
@@ -513,8 +516,7 @@ server <- function(input, output,session) {
       #     readr::write_rds(dat, 'acabau.rds')
       #   }
       # }
-      
-      knitr::kable(dat)
+
       return(dat)
       
     })
