@@ -117,20 +117,21 @@ ui <- fluidPage(theme = shinytheme("cosmo"),
                                       
                                       mainPanel(
                                         textOutput("clustersText"),
+                                        tableOutput("clusterTable")#,
                                         #A variety of metrics exist to help choose the number of clusters to be extracted in a cluster analysis.
                                         #We use silhouette width, an internal validation metric which is an aggregated measure of how similar an
                                         #observation is to its own cluster compared its closest neighboring cluster. The metric can range from
                                         #-1 to 1, where higher values are better.
                                         
                                         #sets location for base leaflet map and make dropdown menu to select the backgroudn map
-                                        selectInput("variable", "Display Variable", c(
-                                          "Cluster" = "cluster",
-                                          "Avg. annual Tmax" = "tmax",
-                                          "Avg. annual rainfall" = "rain",
-                                          "Avg. annual rainfall variability" = "rainVar",
-                                          "Elevation" = "elev",
-                                          "Soil type" = "soil"
-                                        ))#,
+                                        # selectInput("variable", "Display Variable", c(
+                                        #   "Cluster" = "cluster",
+                                        #   "Avg. annual Tmax" = "tmax",
+                                        #   "Avg. annual rainfall" = "rain",
+                                        #   "Avg. annual rainfall variability" = "rainVar",
+                                        #   "Elevation" = "elev",
+                                        #   "Soil type" = "soil"
+                                        # ))#,
                                         #checkboxInput("incSoS", "Include all SoS sites in hist outputs?", TRUE),
                                        # leafletOutput('ClusterPlot'),
                                        # plotOutput('SelectedCurrentPlot',height = "600px"),
@@ -584,11 +585,22 @@ server <- function(input, output,session) {
            ", and ",
            clustersSuggested[3],
            "." )
-    
-
-    
   })
   
+  output$clusterTable <- renderTable({
+    req(length(variablesUSE()) > 1) 
+    #req(sum(c(input$tmax, input$rain, input$rainVar, input$elev, input$soils) %in% TRUE) > 1)
+   # req(input$clusters)
+    # req(input$tmax %in% TRUE)
+    print('clusterTable')
+    df<-EnvCluserData(EnvDat(),
+                      variablesUSE(),
+                      input$clusters) %>%
+        dplyr::select(cluster, CAPAD, SiteName)
+    # df$locationID<-paste0(1:nrow(df),"ID")
+    # df$secondLocationID <- paste(as.character(df$locationID), "_selectedLayer", sep="")
+    return(df)
+  })
   
 
   
@@ -610,20 +622,20 @@ server <- function(input, output,session) {
  # 
  #  })
  #  
- #  #reactively run the cluster analysis based on the variables and number of clusters selected in the side bar
- #  clusDat <- reactive({
- #    
- #    req(sum(c(input$tmax, input$rain, input$rainVar, input$elev, input$soils) %in% TRUE) > 1)
- #   # req(input$tmax %in% TRUE)
- #    
- #    df<-EnvCluserData(EnvDat(),
- #                  variablesUSE(),
- #                  input$clusters)
- #    df$locationID<-paste0(1:nrow(df),"ID")
- #    df$secondLocationID <- paste(as.character(df$locationID), "_selectedLayer", sep="")
- #    return(df)
- #    
- #  })
+  #reactively run the cluster analysis based on the variables and number of clusters selected in the side bar
+  clusDat <- reactive({
+
+    req(sum(c(input$tmax, input$rain, input$rainVar, input$elev, input$soils) %in% TRUE) > 1)
+   # req(input$tmax %in% TRUE)
+
+    df<-EnvCluserData(EnvDat(),
+                  variablesUSE(),
+                  input$clusters)
+    df$locationID<-paste0(1:nrow(df),"ID")
+    df$secondLocationID <- paste(as.character(df$locationID), "_selectedLayer", sep="")
+    return(df)
+
+  })
  #  
  #  
  #  proxy <- leafletProxy("ClusterPlot")#this allows you to keep adding things to the map just by calling proxy

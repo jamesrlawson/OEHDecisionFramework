@@ -42,14 +42,19 @@
 
 # return a df of occurrence lat longs, env data and cluster ID's
 EnvCluserData <- function(Env, variablesUSE, clusters) {
+  
+  print('running EnvClusterData')
+  
   # get data that is needed
   dat <- Env
   
+
   #clean data for use
   datCluster <- dat[, variablesUSE]
-  datCluster$soil <- if (is.element("soil", variablesUSE))factor(datCluster$soil)
-#  datCluster$rainVar <- if (is.element("rainVar", variablesUSE))factor(datCluster$rainVar)
-
+  if(!is.atomic(datCluster)){ # only do this if 
+    datCluster$soil <- if (is.element("soil", variablesUSE))factor(datCluster$soil)
+  #  datCluster$rainVar <- if (is.element("rainVar", variablesUSE))factor(datCluster$rainVar)
+ }
   # #define (dis)similarity between observations
   gower_dist <- daisy(datCluster,
                       metric = "gower")
@@ -66,7 +71,7 @@ EnvCluserData <- function(Env, variablesUSE, clusters) {
 
 ClusterNumbers <- function(Env, variablesUSE) {
   
-  browser()
+ # browser()
   
   # get data that is needed
   dat <- Env
