@@ -391,43 +391,41 @@ server <- function(input, output,session) {
     
     withProgress(message = 'Loading environmental data', value = 1, {
       
-      req(input$SOSspecies, input$long_column, input$lat_column)
+      req(input$SOSspecies, input$species, input$long_column, input$lat_column)
       
-      print(input$SOSspecies)
+      print(input$species)
       
-      # if the data for acabau has already been saved to .rds, read that instead of running slow EnvExtract()
-      if(input$SOSspecies == 'Acacia baueri subsp. aspera') {
-        if(file.exists('acabau.rds')) {
-          print('loading acabau data from .rds')
-          dat <- readr::read_rds('acabau.rds')
-        }
-      } else { 
+     #if the data for acabau has already been saved to .rds, read that instead of running slow EnvExtract()
+     if(input$species == 'Acacia baueri subsp. aspera' & file.exists('acabau.rds')) {
+         print('loading acabau data from .rds')
+         dat <- readr::read_rds('acabau.rds')
+         return(dat)
+     } else {
       
-      spdat <- spData()
-      spdat$lat <- spdat[, input$lat_column]
-      spdat$long <- spdat[, input$long_column]
-      dat <- EnvExtract(spdat$lat,spdat$long)
-      
-      #select site data
-      coords <- dat[,c("long","lat")]
-      coordinates(coords) <-c("long","lat")
-      proj4string(coords)<-crs(sites)
-      
-      sp <- input$SOSspecies
-      managmentSite <- sites[sites$SciName == sp,]
-      dat <- cbind(dat, sp::over(coords,managmentSite,returnList = FALSE))
-      
-      }
-      
-      # if file doesn't exist already, write acabau env data to an .rds
-      if(input$SOSspecies == 'Acacia baueri subsp. aspera') {
-        if(!file.exists('acabau.rds')) {
-          print('writing acabau data to file')
-          readr::write_rds(dat, 'acabau.rds')
-        }
-      }
-      
-      return(dat)
+        spdat <- spData()
+        spdat$lat <- spdat[, input$lat_column]
+        spdat$long <- spdat[, input$long_column]
+        dat <- EnvExtract(spdat$lat,spdat$long)
+        
+        #select site data
+        coords <- dat[,c("long","lat")]
+        coordinates(coords) <-c("long","lat")
+        proj4string(coords)<-crs(sites)
+        
+        sp <- input$species
+        managmentSite <- sites[sites$SciName == sp,]
+        dat <- cbind(dat, sp::over(coords,managmentSite,returnList = FALSE))
+        
+          #if file doesn't exist already, write acabau env data to an .rds
+          if(input$species == 'Acacia baueri subsp. aspera') {
+          #  if(!file.exists('acabau.rds')) {
+              print('writing acabau data to file')
+              readr::write_rds(dat, 'acabau.rds')
+          #  }
+          }
+        return(dat)
+        
+     }
       
     })
   })
