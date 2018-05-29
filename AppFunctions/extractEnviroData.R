@@ -73,7 +73,7 @@ EnvExtract<-function(spdat, cell){
   
   projAEA <- crs("+init=epsg:3577 +proj=aea +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=132 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m")
   
-  print(paste0('length of spdat is ',nrow(spdat)))
+ # print(paste0('length of spdat is ',nrow(spdat)))
   
  # spdata <- spdat()
   sp.AOO <- getAOOraster(spdat, 1)
@@ -81,7 +81,7 @@ EnvExtract<-function(spdat, cell){
   sp.AOO_poly<- rasterToPolygons(sp.AOO)
   
   dat <- sp.AOO_poly %>% as.data.frame(.)
-  print(paste0('length of sp.AOO_poly is ',nrow(dat)))
+  #print(paste0('length of sp.AOO_poly is ',nrow(dat)))
   
   #prep point data
   P4S <- CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
@@ -119,9 +119,9 @@ EnvExtract<-function(spdat, cell){
     extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
   dat$NarClimffdigt50 <- env.reproj(raster("AppEnvData/NarClimffdigt50.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
     extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
-  dat$NarClimRain <- env.reproj(raster("AppEnvData/NarClimRain.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+  dat$NarClimfRain <- env.reproj(raster("AppEnvData/NarClimRain.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
     extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
-  dat$NarClimTmax <- env.reproj(raster("AppEnvData/NarClimTmax.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+  dat$NarClimfTmax <- env.reproj(raster("AppEnvData/NarClimTmax.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
     extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
   # #extract point data for climate variables
   # dat$elev<-extract(raster("AppEnvData/elev.asc"),coords)
