@@ -123,6 +123,12 @@ EnvExtract<-function(spdat, cell){
     extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
   dat$NarClimfTmax <- env.reproj(raster("AppEnvData/NarClimTmax.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
     extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
+  
+  # get actual predictions for tmax and rainfall
+  
+  dat$tmax_future <- dat$tmax + dat$NarClimfTmax
+  dat$rain_future <- dat$rain * (1 + (dat$NarClimfRain/100))
+  
   # #extract point data for climate variables
   # dat$elev<-extract(raster("AppEnvData/elev.asc"),coords)
   # dat$rain<-extract(raster("AppEnvData/rain.asc"),coords)

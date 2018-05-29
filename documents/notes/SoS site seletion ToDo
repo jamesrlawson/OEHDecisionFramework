@@ -25,3 +25,25 @@ There might not even be any reason to force a user to manually select sites?
 - could just output the results of the cluster analysis in a table...
 - SoS could then select which specific populations or AOO pixels they'd want to protect
 - this might be based on other factors, such as whether the population is already in a reserve, what the population size is, proximity to other operations etc.
+
+
+## FUTURE CLIMATES ##
+
+Useful to get actual projections, rather than just change
+
+	Daisy has BOM data which is 1960-1990. We need a mean of 1990-2009, so that we can combine it with the 2009-2069 projected change.
+	Or could see if jbaums has given me code already to get multimodel mean projections
+
+
+## CURRENT CLIMATES ##
+
+Get ANUClim data
+
+Include tavg
+
+Rainfall variability:
+
+http://www.bom.gov.au/climate/averages/climatology/gridded-data-info/metadata/md_ave_rain_var.shtml
+based on monthly data
+Rainfall variability = (90th percentile – 10th percentile) / 50th percentile.
+remove categorisation

@@ -21,3 +21,11 @@ The multivariate environmental similarity (MES) calculation represents how simil
 3)	(pi – mini) / (maxi – mini) * 100 if pi < mini
 4)	(maxi – pi) / (maxi –mini) * 100 if pi > maxi
 The final multivariate similarity for P is computed as the minimum of the similarity values with respect to each of the variables. Amongst others uses MES is employed to evaluate the validity of extrapolating environmental distribution models to new areas or novel climates. 
+
+Possingham & Watts 2011 - Marxan and its relatives
+
+Carwadine 2008 & Klein 2009 in press (Marxan prioritisation of Australia)
+
+
+Used • 151 environmental domains, represented by an environmental classifi cation based on a set of key climatic, topographic, and substrate conditions that characterize the landscape (Mackey et al. 2008).
+
