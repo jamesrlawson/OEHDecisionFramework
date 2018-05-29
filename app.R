@@ -587,6 +587,19 @@ server <- function(input, output,session) {
            "." )
   })
   
+  
+  distFromNiche <- function(current, future) {
+    
+  nichemax <- max(current)
+
+   x <-  future - nichemax
+
+   # if(x <= 0) {
+   #   x <- 0
+   # }
+   return(x)
+  }
+  
   output$clusterTable <- renderTable({
     req(length(variablesUSE()) > 1) 
     #req(sum(c(input$tmax, input$rain, input$rainVar, input$elev, input$soils) %in% TRUE) > 1)
@@ -596,7 +609,9 @@ server <- function(input, output,session) {
     df<-EnvCluserData(EnvDat(),
                       variablesUSE(),
                       input$clusters) %>%
-        dplyr::select(cluster, CAPAD, SiteName)
+        dplyr::mutate(tmax_outside = distFromNiche(tmax, tmax_future)) %>%
+        dplyr::select(cluster, CAPAD, SiteName, tmax_outside)
+    
     # df$locationID<-paste0(1:nrow(df),"ID")
     # df$secondLocationID <- paste(as.character(df$locationID), "_selectedLayer", sep="")
     return(df)
