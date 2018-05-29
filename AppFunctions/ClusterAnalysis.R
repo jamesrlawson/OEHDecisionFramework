@@ -6,23 +6,34 @@
 #observation is to its own cluster compared its closest neighboring cluster. The metric can range from
 #-1 to 1, where higher values are better.
 
-# #get test data
-# library(rgdal)
+#get test data
+
+# sp<-"Acacia baueri subsp. aspera"
+# spdat<-read.csv("AppEnvData/SpeciesObservations/obsSmall2.csv")
+# spdat<-subset(spdat,Scientific==sp)
 # 
-# source("AppFunctions/extractEnviroData.R", local = T)
+# spdata <- spdat[,c('Latitude_G', 'Longitude_')] 
 # 
-# sp <- "Acacia acanthoclada"
-# spdat <-
-#   read.csv("AppEnvData/SpeciesObservations/SOSflora.csv", header = TRUE)
-# spdat <- subset(spdat, Scientific == sp)
-# sites <- readOGR("AppEnvData/ManagmentSites/OEHManagmentSites.shp")
+# dat <- EnvExtract(spdata)
 # 
-# spdat$lat <- spdat[, "Latitude_G"]
-# spdat$long <- spdat[, "Longitude_"]
-# dat <- EnvExtract(spdat$lat, spdat$long)
+# #select site data
+# coords <- dat[,c("long","lat")]
+# coordinates(coords) <-c("long","lat")
+# proj4string(coords)<-crs(sites)
 # 
 # 
- # require(cluster) # for gower similarity and pam
+# sp.AOO_poly <- spdat %>% getAOOraster(.,1) %>% rasterToPolygons(.)
+# 
+# # sp <- input$SOSspecies
+# sites<-readOGR("AppEnvData/ManagmentSites/OEHManagmentSites.shp")
+# 
+# projAEA <- crs("+init=epsg:3577 +proj=aea +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=132 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m")
+# managmentSite <- sites[sites$SciName == sp,] %>% spTransform(.,projAEA)
+# 
+# dat <- cbind(dat, sp::over(sp.AOO_poly,managmentSite,returnList = FALSE))
+# 
+# 
+# require(cluster) # for gower similarity and pam
 # #require(Rtsne) # for t-SNE plot
 # #require(ggplot2) # for visualization
 # variablesUSE <- c("soil", "elev", "rain", "tmax", "rainVar")
@@ -37,7 +48,7 @@ EnvCluserData <- function(Env, variablesUSE, clusters) {
   #clean data for use
   datCluster <- dat[, variablesUSE]
   datCluster$soil <- if (is.element("soil", variablesUSE))factor(datCluster$soil)
-  datCluster$rainVar <- if (is.element("rainVar", variablesUSE))factor(datCluster$rainVar)
+#  datCluster$rainVar <- if (is.element("rainVar", variablesUSE))factor(datCluster$rainVar)
 
   # #define (dis)similarity between observations
   gower_dist <- daisy(datCluster,
@@ -54,12 +65,15 @@ EnvCluserData <- function(Env, variablesUSE, clusters) {
 
 
 ClusterNumbers <- function(Env, variablesUSE) {
+  
+  browser()
+  
   # get data that is needed
   dat <- Env
   #clean data for use
   datCluster <- dat[, variablesUSE]
   datCluster$soil <- if (is.element("soil", variablesUSE))factor(datCluster$soil)
-  datCluster$rainVar <- if (is.element("rainVar", variablesUSE))factor(datCluster$rainVar)
+ # datCluster$rainVar <- if (is.element("rainVar", variablesUSE))factor(datCluster$rainVar)
   #clean data for use
   
   #define (dis)similarity between observations
@@ -68,14 +82,15 @@ ClusterNumbers <- function(Env, variablesUSE) {
   
   #determine suggested number of clusters
   sil_width <- c()
-  for (i in 1:9) {
+ #  for (i in 1:9) {
+  for (i in 1:6) {
     pam_fit <- pam(gower_dist,
                    diss = TRUE,
-                   k = i+1) #clusters from 2:10
+                   k = i+1) #clusters from 2:7
     sil_width[i] <- pam_fit$silinfo$avg.width
   }
   
-  sil_dat <- data.frame(cbind(sil_width, 2:10))
+  sil_dat <- data.frame(cbind(sil_width, 2:7))
   sil_dat<-sil_dat[order(sil_width,decreasing = TRUE),] #order them so best performers are first in dataframe
 
   return(sil_dat$V2[1:3])

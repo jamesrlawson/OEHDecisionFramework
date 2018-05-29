@@ -110,11 +110,11 @@ EnvExtract<-function(spdat, cell){
   print('extracting raster data')
   
   dat$elev <- env.reproj(raster("AppEnvData/elev.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
-              extract(., sp.AOO_poly, fun=mean)
+              extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
   dat$rain <- env.reproj(raster("AppEnvData/rain.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
-    extract(., sp.AOO_poly, fun=mean)
+    extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
   dat$tmax <- env.reproj(raster("AppEnvData/tmax.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
-    extract(., sp.AOO_poly, fun=mean)
+    extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
   dat$rainVar <- env.reproj(raster("AppEnvData/rainVar.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
     extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
   dat$NarClimffdigt50 <- env.reproj(raster("AppEnvData/NarClimffdigt50.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
