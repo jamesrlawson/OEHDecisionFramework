@@ -396,8 +396,8 @@ server <- function(input, output,session) {
       #location of managment sites
       addPolygons(data=SPsite,
                   weight = 3,
-                  color = "red",
-                  fillColor = "red",
+                  color = "magenta",
+                  fillColor = "magenta",
                   opacity = 0.5,
                   popup = paste(
                     '<strong>SoS Site:</strong>', capitalize(as.character(SPsite$SiteName)), '<br>'
@@ -406,9 +406,9 @@ server <- function(input, output,session) {
                        ~long, ~lat,#locations of species,
                        radius = 1,
                    #    weight = 5,
-                        color = 'blue',
+                        color = 'red',
                         fill = TRUE,
-                        fillColor = 'blue',
+                        fillColor = 'red',
                         opacity = 1,
                         fillOpacity = 1,
                        group = 'Not site managed')%>%
@@ -587,19 +587,20 @@ server <- function(input, output,session) {
            "." )
   })
   
-  
-  distFromNiche <- function(current, future) {
+
+  futureSuitability <- function(current, future) {
     
-  nichemax <- max(current)
-
-   x <-  future - nichemax
-
-   # if(x <= 0) {
-   #   x <- 0
-   # }
-   return(x)
+    below <- future - min(current)
+    below[below > 0] <- 0
+    
+    above <- future - max(current)
+    above[above < 0] <- 0
+    
+    output <- with(data.frame(below,above), pmax(below, above))
+    return(output)
   }
   
+
   output$clusterTable <- renderTable({
     req(length(variablesUSE()) > 1) 
     #req(sum(c(input$tmax, input$rain, input$rainVar, input$elev, input$soils) %in% TRUE) > 1)
@@ -609,8 +610,9 @@ server <- function(input, output,session) {
     df<-EnvCluserData(EnvDat(),
                       variablesUSE(),
                       input$clusters) %>%
-        dplyr::mutate(tmax_outside = distFromNiche(tmax, tmax_future)) %>%
-        dplyr::select(cluster, CAPAD, SiteName, tmax_outside)
+        dplyr::mutate(tmax_outsideNiche = futureSuitability(tmax, tmax_future)) %>%
+        dplyr::mutate(rain_outsideNiche = futureSuitability(rain, rain_future)) %>%
+        dplyr::select(cluster, CAPAD, SiteName, tmax_outsideNiche)
     
     # df$locationID<-paste0(1:nrow(df),"ID")
     # df$secondLocationID <- paste(as.character(df$locationID), "_selectedLayer", sep="")

@@ -67,7 +67,11 @@ EnvCluserData <- function(Env, variablesUSE, clusters) {
   
 }
 
-
+## to get cluster means
+# 
+# require(dplyr)
+# clus1 <- subset(dat, cluster==1) %>% summarise_at(vars(elev:NarClimfTmax), mean, na.rm=TRUE)
+# clus2 <- subset(dat, cluster==2) %>% summarise_at(vars(elev:NarClimfTmax), mean, na.rm=TRUE)
 
 ClusterNumbers <- function(Env, variablesUSE) {
   
