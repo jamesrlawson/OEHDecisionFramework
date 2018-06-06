@@ -17,12 +17,16 @@ acabau.agg <- dplyr::group_by(acabau, clumps) %>% summarise(clumpSize = length(c
 #acabau.agg <- acabau.agg[order(acabau.agg$suitability),]
 acabau.agg <- acabau.agg[with(acabau.agg, order(suitability, -clumpSize)),] # order by suitability, choosing largest clumpsize for clumps with identical suitability
 
-suitables <- length(acabau.agg$suitability[acabau.agg$suitability <= quantile(acabau.agg$suitability, 0.10)])
+# suitables <- length(acabau.agg$suitability[acabau.agg$suitability <= quantile(acabau.agg$suitability, 0.10)])
+suitables <- nrow(acabau.agg[acabau.agg$suitability <= quantile(acabau.agg$suitability, 0.10) & acabau.agg$clumpSize > quantile(acabau.agg$clumpSize, 0.5),])
+
+suitables <- ifelse(suitables < 10, 10, suitables)
 
 combinations <- as.data.frame(t(combn(acabau.agg[1:10,]$clumps, 5))) 
 combinations <- as.data.frame(t(combn(acabau.agg[1:15,]$clumps, 5))) 
 
 combinations <- as.data.frame(t(combn(acabau.agg[1:suitables,]$clumps, 5))) 
+
 
 # remove duplicate sets (with any row order)
 #combinations <- combinations[!duplicated(t(apply(combinations,1,sort))),] 
@@ -42,9 +46,15 @@ get_setStability <- function(x) {
 }
 
 get_setGowdis <- function(x) {
-  set.envdat <- acabau_env[acabau_env$clumps %in% x,c(1,3:7)]
-  set.gowdis <- cluster::daisy(set.envdat, metric='gower') # 3:7 is the environmental variables we're currently using
-  mean(as.vector(set.gowdis),na.rm=TRUE)
+  
+  set.envdat <- acabau_env[acabau_env$clumps %in% x,c(3:7)]
+  set.gowdis <- cluster::daisy(set.envdat, metric='gower') # 3:7 are the environmental variables we're currently using
+  
+  groups <- factor(c(rep(1,nrow(as.matrix(set.gowdis))))) # need this for next calculation
+  disp <- betadisper(set.gowdis, group = groups) # calculate distances from multivariate centroid
+  mean(disp$distances) # calculate mean distance to centroid
+
+  # mean(as.vector(set.gowdis),na.rm=TRUE)
 }
 
 containsProtected <- function(x) {
@@ -81,6 +91,16 @@ for(i in 1:nrow(combinations)) {
   blax.list[[i]] <- blax
 }
 
+blax <- do.call('rbind', blax.list)
+
+
+# 
+# blax.list <- as.list(data.frame(t(combinations)))
+# 
+# purrr::map(t(combinations), get_setStability)
+# 
+# blax.list[1:100]
+
 blax$set.suitability_ <- 1 - (blax$set.suitability/max(blax$set.suitability)) %>% round(5)
 blax$set.suitability_[blax$set.suitability_ %in% NaN] <- 1
 blax$set.suitability_ <- blax$set.suitability_ / max(blax$set.suitability_)
@@ -105,24 +125,26 @@ blax$final_ <- blax$final / max(blax$final)
 # z <- combinations[4,] 
 # z <- combinations[169,] 
 
-z <- combinations[1959,]
+set.top <- blax[blax$final_ ==  max(blax$final_),]$setID
+
+z <- combinations[set.top,]
 
 #View(acabau[acabau$clumps %in% z,])
 #View(acabau_env[acabau_env$clumps %in% z,])
 
-plot(sp.AOO_poly, fill='blue', border='blue')
+plot(sp.AOO_poly, col='blue', border='blue')
 #y <- unique(reshape2::melt(combinations)$value) # all climatically suitable sites from selection space
 
-acabau.agg$suitability[acabau.agg$suitability <= quantile(acabau.agg$suitability, 0.10)]
+nrow(acabau.agg[acabau.agg$suitability <= quantile(acabau.agg$suitability, 0.10) & acabau.agg$clumpSize > quantile(acabau.agg$clumpSize, 0.5),])
 
-acabau_allsuitable <- acabau.agg[acabau.agg$suitability %in% c(min(acabau.agg[1:15,]$suitability):max(acabau.agg[1:15,]$suitability)),]
-acabau_allsuitable <- acabau.agg[acabau.agg$suitability %in% acabau.agg[1:64,]$suitability,]
+acabau_allsuitable <- acabau.agg[acabau.agg$suitability %in% c(min(acabau.agg[1:17,]$suitability):max(acabau.agg[1:17,]$suitability)),]
+#acabau_allsuitable <- acabau.agg[acabau.agg$suitability %in% acabau.agg[1:64,]$suitability,]
 
 combinations_allsuitable <- combn(acabau_allsuitable$clumps, 5)
 y <- unique(reshape2::melt(combinations_allsuitable)$value) 
   
-plot(sp.AOO_poly[sp.AOO_poly$clumps %in% y,], fill='orange', border='orange', add=TRUE)
-plot(sp.AOO_poly[sp.AOO_poly$clumps %in% z,], fill='red', border='red', add=TRUE) # selected sites
+plot(sp.AOO_poly[sp.AOO_poly$clumps %in% y,], col='orange', border='orange', add=TRUE)
+plot(sp.AOO_poly[sp.AOO_poly$clumps %in% z,], col='red', border='red', add=TRUE) # selected sites
 
 
 acabau_allsuitable <- acabau.agg[acabau.agg$suitability %in% c(min(acabau.agg$suitability):max(acabau.agg$suitability)),]
