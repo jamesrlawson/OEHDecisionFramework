@@ -11,6 +11,8 @@
 require(raster)
 require(sp)
 require(rgdal)
+require(igraph)
+require(magrittr)
 
 ######## get 2km grid AOO, with optimised grid initiation point #########
 
@@ -69,20 +71,21 @@ env.reproj <- function(ras, AOOraster) {
 }
 
 
-EnvExtract<-function(spdat, cell){
+EnvExtract<-function(spdat){
   
   projAEA <- crs("+init=epsg:3577 +proj=aea +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=132 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m")
   
- # print(paste0('length of spdat is ',nrow(spdat)))
+  # get 1km gridcell AOO
+  sp.AOO <- getAOOraster(spdat, 1) %>%
+            clump(directions=8) # clump by cell adjacency (including diagonals) and set raster values as the clump ID
   
- # spdata <- spdat()
-  sp.AOO <- getAOOraster(spdat, 1)
+  ## get cell count for each clump
+  # table(as.matrix(bla.ras.clumped))
   
-  sp.AOO_poly<- rasterToPolygons(sp.AOO)
-  
-  dat <- sp.AOO_poly %>% as.data.frame(.)
-  #print(paste0('length of sp.AOO_poly is ',nrow(dat)))
-  
+  sp.AOO_poly<- rasterToPolygons(sp.AOO) # convert to polygons
+
+  # dat <- sp.AOO_poly %>% as.data.frame(.)
+
   #prep point data
   P4S <- CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
   # coords <- data.frame(long, lat)
@@ -92,15 +95,15 @@ EnvExtract<-function(spdat, cell){
   
   #extract means of pixel data for shapefiles
   print('extracting CAPAD data')
-  CAPAD <- shapefile("AppEnvData/CAPADnsw/CAPAD2_NSW.shp",p4s = paste(P4S)) %>% 
+  CAPAD <- shapefile("AppEnvData/CAPADnsw/CAPAD2_NSW.shp") %>% 
            spTransform(., projAEA) %>%
            over(sp.AOO_poly, .)
-  dat$CAPAD <- paste(CAPAD$NAME, CAPAD$TYPE) %>% gsub('NA NA', NA, .)
+  sp.AOO_poly$CAPAD <- paste(CAPAD$NAME, CAPAD$TYPE) %>% gsub('NA NA', NA, .)
   print('extracting soil data')
-  soil <- shapefile("AppEnvData/soil/soilAtlas2M.shp",p4s = paste(P4S)) %>%
+  soil <- shapefile("AppEnvData/soil/soilAtlas2M.shp") %>%
           spTransform(., projAEA) %>%
           over(sp.AOO_poly, .)
-  dat$soil <- soil$Majr_Sl
+  sp.AOO_poly$soil <- soil$Majr_Sl
     
   # #extract point data for shapefiles
   # dat$CAPAD<-over(coords,shapefile("AppEnvData/CAPADnsw/CAPAD2_NSW.shp",p4s = paste(P4S)))$Name
@@ -109,25 +112,41 @@ EnvExtract<-function(spdat, cell){
   #extract means of pixel data from rasters
   print('extracting raster data')
   
-  dat$elev <- env.reproj(raster("AppEnvData/elev.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
-              extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
-  dat$rain <- env.reproj(raster("AppEnvData/rain.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+  sp.AOO_poly$elev <- env.reproj(raster("AppEnvData/elev.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
     extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
-  dat$tmax <- env.reproj(raster("AppEnvData/tmax.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+  sp.AOO_poly$rain <- env.reproj(raster("AppEnvData/rain.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
     extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
-  dat$rainVar <- env.reproj(raster("AppEnvData/rainVar.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+  sp.AOO_poly$tmax <- env.reproj(raster("AppEnvData/tmax.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
     extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
-  dat$NarClimffdigt50 <- env.reproj(raster("AppEnvData/NarClimffdigt50.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+  sp.AOO_poly$rainVar <- env.reproj(raster("AppEnvData/rainVar.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
     extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
-  dat$NarClimfRain <- env.reproj(raster("AppEnvData/NarClimRain.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+  sp.AOO_poly$NarClimffdigt50 <- env.reproj(raster("AppEnvData/NarClimffdigt50.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
     extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
-  dat$NarClimfTmax <- env.reproj(raster("AppEnvData/NarClimTmax.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+  sp.AOO_poly$NarClimfRain <- env.reproj(raster("AppEnvData/NarClimRain.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
     extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
+  sp.AOO_poly$NarClimfTmax <- env.reproj(raster("AppEnvData/NarClimTmax.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+    extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
+  # 
+  # 
+  # dat$elev <- env.reproj(raster("AppEnvData/elev.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+  #             extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
+  # dat$rain <- env.reproj(raster("AppEnvData/rain.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+  #   extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
+  # dat$tmax <- env.reproj(raster("AppEnvData/tmax.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+  #   extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
+  # dat$rainVar <- env.reproj(raster("AppEnvData/rainVar.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+  #   extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
+  # dat$NarClimffdigt50 <- env.reproj(raster("AppEnvData/NarClimffdigt50.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+  #   extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
+  # dat$NarClimfRain <- env.reproj(raster("AppEnvData/NarClimRain.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+  #   extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
+  # dat$NarClimfTmax <- env.reproj(raster("AppEnvData/NarClimTmax.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+  #   extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
   
   # get actual predictions for tmax and rainfall
   
-  dat$tmax_future <- dat$tmax + dat$NarClimfTmax
-  dat$rain_future <- dat$rain * (1 + (dat$NarClimfRain/100))
+  sp.AOO_poly$tmax_future <- sp.AOO_poly$tmax + sp.AOO_poly$NarClimfTmax
+  sp.AOO_poly$rain_future <- sp.AOO_poly$rain * (1 + (sp.AOO_poly$NarClimfRain/100)) # NarClimfRain is in % change, this transforms it to % of current climate value
   
   # #extract point data for climate variables
   # dat$elev<-extract(raster("AppEnvData/elev.asc"),coords)
@@ -148,5 +167,15 @@ EnvExtract<-function(spdat, cell){
   # dat$rainVar[dat$rainVar > 2 ] <- "Extreme"
   # 
   
-  return(dat)
+  # blo <- as.data.frame(sp.AOO_poly) %>%
+  #        mutate(reserved = as.numeric(!is.na(CAPAD))) %>%
+  #        group_by(clumps) %>%
+  #        dplyr::summarise_at(vars(elev:reserved), mean, na.rm=TRUE)
+  # 
+  # blo$clump_count <- as.data.frame(sp.AOO_poly) %>% 
+  #                    group_by(clumps) %>%
+  #                    summarise(n = length(clumps)) %>%
+  #                    .$n
+
+  return(as.data.frame(sp.AOO_poly))
 }

@@ -30,7 +30,7 @@ library(ggplot2)
 library(lemon)
 library(cluster)
 library(shinycssloaders)
-
+library(gridExtra)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(theme = shinytheme("cosmo"),
@@ -416,9 +416,11 @@ server <- function(input, output,session) {
                        radius = 1,
                   #     weight = 5,
                        ~long, ~lat,#locations of species
-                        color = "#E69F00",
+                        # color = "#E69F00",
+                        color = 'yellow',
                         fill = TRUE,
-                        fillColor = "#E69F00",
+                        # fillColor = "#E69F00",
+                        fillColor='yellow',
                         opacity = 1,
                         fillOpacity = 1,
                         group = 'SoS Site Managed') %>%
@@ -480,7 +482,7 @@ server <- function(input, output,session) {
       print(input$SOSspecies)
       
       # if the data for acabau has already been saved to .rds, read that instead of running slow EnvExtract()
-      if(input$SOSspecies == 'Acacia baueri subsp. aspera' & file.exists('acabau.rds')) {
+      if(input$SOSspecies == 'Acacia bynoeana' & file.exists('acabau.rds')) {
           print('loading acabau data from .rds')
           dat <- readr::read_rds('acabau.rds')
           return(dat)
@@ -505,7 +507,7 @@ server <- function(input, output,session) {
       dat <- cbind(dat, sp::over(sp.AOO_poly,managmentSite,returnList = FALSE))
       
       # if file doesn't exist already, write acabau env data to an .rds
-      if(input$SOSspecies == 'Acacia baueri subsp. aspera') {
+      if(input$SOSspecies == 'Acacia bynoeana') {
         if(!file.exists('acabau.rds')) {
           print('writing acabau data to file')
           readr::write_rds(dat, 'acabau.rds')
@@ -612,8 +614,8 @@ server <- function(input, output,session) {
                       input$clusters) %>%
         dplyr::mutate(tmax_outsideNiche = futureSuitability(tmax, tmax_future)) %>%
         dplyr::mutate(rain_outsideNiche = futureSuitability(rain, rain_future)) %>%
-        dplyr::select(cluster, CAPAD, SiteName, tmax_outsideNiche)
-    
+        dplyr::select(clumps, CAPAD, SiteName, tmax_outsideNiche, rain_outsideNiche)
+    readr::write_csv(df, 'acabau_clumps.csv')
     # df$locationID<-paste0(1:nrow(df),"ID")
     # df$secondLocationID <- paste(as.character(df$locationID), "_selectedLayer", sep="")
     return(df)
