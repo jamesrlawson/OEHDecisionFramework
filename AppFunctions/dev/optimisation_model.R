@@ -17,10 +17,12 @@ acabau.agg <- dplyr::group_by(acabau, clumps) %>% summarise(clumpSize = length(c
 #acabau.agg <- acabau.agg[order(acabau.agg$suitability),]
 acabau.agg <- acabau.agg[with(acabau.agg, order(suitability, -clumpSize)),] # order by suitability, choosing largest clumpsize for clumps with identical suitability
 
-#combinations <- t(combn(acabau[acabau$clumps %in% unique(acabau$clumps)[1:5],]$clumps, 5)) 
-#combinations <- t(combn(acabau[acabau$clumps %in% unique(acabau$clumps)[1:10],]$clumps, 5)) # only use top 10 most climate suitable locations (strongly influences final result)
+suitables <- length(acabau.agg$suitability[acabau.agg$suitability <= quantile(acabau.agg$suitability, 0.10)])
 
 combinations <- as.data.frame(t(combn(acabau.agg[1:10,]$clumps, 5))) 
+combinations <- as.data.frame(t(combn(acabau.agg[1:15,]$clumps, 5))) 
+
+combinations <- as.data.frame(t(combn(acabau.agg[1:suitables,]$clumps, 5))) 
 
 # remove duplicate sets (with any row order)
 #combinations <- combinations[!duplicated(t(apply(combinations,1,sort))),] 
@@ -57,15 +59,26 @@ clumpSize <- function(x) {
   mean(acabau_$clumpSize)
 }
 
- 
-blax <- data.frame(setID = rep(NA, nrow(combinations)))
+
+blax.list <- vector("list", length = nrow(combinations))
+# blax <- data.frame(setID = rep(NA, nrow(combinations)))
 for(i in 1:nrow(combinations)) {
-  blax$setID[i] <- i
-  blax$set.suitability[i] <- get_setSuitability(combinations[i,])
-  blax$set.stability[i] <- get_setStability(combinations[i,])
-  blax$set.gowdis[i] <- get_setGowdis(combinations[i,])
-  blax$frac_protected <- containsProtected(combinations[i,])
-  blax$mean_clumpSize <- clumpSize(combinations[i,])
+  blax <- data.frame(setID = rep(NA, 1))
+  print(round(i/length(blax.list),5))
+  # blax$setID[i] <- i
+  # blax$set.suitability[i] <- get_setSuitability(combinations[i,])
+  # blax$set.stability[i] <- get_setStability(combinations[i,])
+  # blax$set.gowdis[i] <- get_setGowdis(combinations[i,])
+  # blax$frac_protected[i] <- containsProtected(combinations[i,])
+  # blax$mean_clumpSize[i] <- clumpSize(combinations[i,])
+  blax$setID <- i
+  blax$set.suitability <- get_setSuitability(combinations[i,])
+  blax$set.stability <- get_setStability(combinations[i,])
+  blax$set.gowdis <- get_setGowdis(combinations[i,])
+  #blax$frac_protected <- containsProtected(combinations[i,])
+  #blax$mean_clumpSize <- clumpSize(combinations[i,])
+  
+  blax.list[[i]] <- blax
 }
 
 blax$set.suitability_ <- 1 - (blax$set.suitability/max(blax$set.suitability)) %>% round(5)
@@ -86,24 +99,36 @@ blax$final_ <- blax$final / max(blax$final)
 
 # plot(x,y)
 
+# z <- combinations[19,] 
+# z <- combinations[9,] 
+# z <- combinations[129,] 
+# z <- combinations[4,] 
+# z <- combinations[169,] 
 
-z <- combinations[19,] 
+z <- combinations[1959,]
 
-View(acabau[acabau$clumps %in% z,])
-
-View(acabau_env[acabau_env$clumps %in% z,])
-
+#View(acabau[acabau$clumps %in% z,])
+#View(acabau_env[acabau_env$clumps %in% z,])
 
 plot(sp.AOO_poly, fill='blue', border='blue')
-plot(sp.AOO_poly[sp.AOO_poly$clumps %in% z,], fill='red', border='red', add=TRUE)
+#y <- unique(reshape2::melt(combinations)$value) # all climatically suitable sites from selection space
+
+acabau.agg$suitability[acabau.agg$suitability <= quantile(acabau.agg$suitability, 0.10)]
+
+acabau_allsuitable <- acabau.agg[acabau.agg$suitability %in% c(min(acabau.agg[1:15,]$suitability):max(acabau.agg[1:15,]$suitability)),]
+acabau_allsuitable <- acabau.agg[acabau.agg$suitability %in% acabau.agg[1:64,]$suitability,]
+
+combinations_allsuitable <- combn(acabau_allsuitable$clumps, 5)
+y <- unique(reshape2::melt(combinations_allsuitable)$value) 
+  
+plot(sp.AOO_poly[sp.AOO_poly$clumps %in% y,], fill='orange', border='orange', add=TRUE)
+plot(sp.AOO_poly[sp.AOO_poly$clumps %in% z,], fill='red', border='red', add=TRUE) # selected sites
 
 
-
-
-
-
-
-
+acabau_allsuitable <- acabau.agg[acabau.agg$suitability %in% c(min(acabau.agg$suitability):max(acabau.agg$suitability)),]
+y <- unique(reshape2::melt(combinations_allsuitable)$value) 
+plot(sp.AOO_poly, fill='blue', border='blue')
+plot(sp.AOO_poly[sp.AOO_poly$clumps %in% y,], fill='orange', border='orange', add=TRUE)
 
 
 
