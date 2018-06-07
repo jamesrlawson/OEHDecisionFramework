@@ -482,7 +482,7 @@ server <- function(input, output,session) {
       print(input$SOSspecies)
       
       # if the data for acabau has already been saved to .rds, read that instead of running slow EnvExtract()
-      if(input$SOSspecies == 'Acacia pubescens' & file.exists('acabau.rds')) {
+      if(input$SOSspecies == 'Syzygium paniculatum' & file.exists('acabau.rds')) {
           print('loading acabau data from .rds')
           dat <- readr::read_rds('acabau.rds')
           return(dat)
@@ -507,7 +507,7 @@ server <- function(input, output,session) {
       dat <- cbind(dat, sp::over(sp.AOO_poly,managmentSite,returnList = FALSE))
       
       # if file doesn't exist already, write acabau env data to an .rds
-      if(input$SOSspecies == 'Acacia pubescens') {
+      if(input$SOSspecies == 'Syzygium paniculatum') {
         if(!file.exists('acabau.rds')) {
           print('writing acabau data to file')
           readr::write_rds(dat, 'acabau.rds')
@@ -592,10 +592,13 @@ server <- function(input, output,session) {
 
   futureSuitability <- function(current, future) {
     
-    below <- future - min(current)
+    # below <- future - min(current)
+    below <- future - quantile(current, 0.05)
+    
     below[below > 0] <- 0
     
-    above <- future - max(current)
+    # above <- future - max(current)
+    above <- future - quantile(current, 0.95)
     above[above < 0] <- 0
     
     output <- with(data.frame(below,above), pmax(below, above))

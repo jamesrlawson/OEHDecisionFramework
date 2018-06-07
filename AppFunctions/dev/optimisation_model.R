@@ -154,7 +154,7 @@ b <- acabau_env[acabau_env$clumps %in% z,]
 
 ####### plot maps and histograms #######
 
-sp<-"Acacia pubescens"
+sp<-"Syzygium paniculatum"
 spdat<-readr::read_csv("AppEnvData/SpeciesObservations/SOSflora.csv") %>%
   filter(Scientific %in% sp)
 
