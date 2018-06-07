@@ -41,20 +41,31 @@ get_setStability <- function(x) {
   acabau_ <- acabau %>% dplyr::group_by(clumps) %>% summarise(protected = mean(protected, na.rm=TRUE),
                                                               clump_size = length(clumps))
   set.stability <- acabau_[acabau_$clumps %in% x,] %>%
-                   mutate(stability = (protected + clump_size/max(acabau_$clump_size))/2)
+                    mutate(stability = (protected + clump_size/max(acabau_$clump_size))/2)
+                    # mutate(stability = protected)
   sum(set.stability$stability, na.rm=TRUE)
 }
 
 get_setGowdis <- function(x) {
   
-  set.envdat <- acabau_env[acabau_env$clumps %in% x,c(3:7)]
-  set.gowdis <- cluster::daisy(set.envdat, metric='gower') # 3:7 are the environmental variables we're currently using
+  # set.envdat <- acabau_env[acabau_env$clumps %in% x,c(3:7)]
+   set.envdat <- acabau_env[acabau_env$clumps %in% x,c(4:7)]
+  
+  set.gowdis <- cluster::daisy(set.envdat, metric='gower', stand=TRUE) # 3:7 are the environmental variables we're currently using
   
   groups <- factor(c(rep(1,nrow(as.matrix(set.gowdis))))) # need this for next calculation
-  disp <- betadisper(set.gowdis, group = groups) # calculate distances from multivariate centroid
-  mean(disp$distances) # calculate mean distance to centroid
-
-  # mean(as.vector(set.gowdis),na.rm=TRUE)
+  disp <- betadisper(set.gowdis, group = groups, bias.adjust=TRUE) # calculate distances from multivariate centroid
+ # mean(disp$distances) # calculate mean distance to centroid
+  # or calculate representativeness across bins between 0-1
+  # bin disp$distance into 10 bins, calculate fraction of bins represented
+  # length(unique(cut(disp$distances, breaks=seq(0,1,by=0.05), right = FALSE)))/20
+  
+  # or both!
+  # mean(disp$distances) * length(unique(cut(disp$distances, breaks=seq(0,1,by=0.05), right = FALSE)))/20
+  
+  # or distance range?
+  max(disp$distances)-min(disp$distances)
+  
 }
 
 containsProtected <- function(x) {
@@ -107,7 +118,9 @@ blax$set.suitability_ <- blax$set.suitability_ / max(blax$set.suitability_)
 blax$set.stability_ <- blax$set.stability/max(blax$set.stability)
 blax$set.gowdis_ <- blax$set.gowdis/max(blax$set.gowdis)
 
-blax$final <- blax$set.suitability_ * blax$set.stability_ * blax$set.gowdis_
+blax$final <- blax$set.suitability_ * blax$set.stability_ * (blax$set.gowdis_)
+#blax$final <- blax$set.suitability_ * (blax$set.gowdis_)
+
 blax$final_ <- blax$final / max(blax$final)
 
 
@@ -126,13 +139,17 @@ blax$final_ <- blax$final / max(blax$final)
 # z <- combinations[169,] 
 
 set.top <- blax[blax$final_ ==  max(blax$final_),]$setID
+set.top
+# set.top = 2070
+# set.top = 4029
 
 z <- combinations[set.top,]
 
-#View(acabau[acabau$clumps %in% z,])
-#View(acabau_env[acabau_env$clumps %in% z,])
+a <- acabau[acabau$clumps %in% z,]
+b <- acabau_env[acabau_env$clumps %in% z,]
 
-plot(sp.AOO_poly, col='blue', border='blue')
+plot(env.reproj(raster("AppEnvData/elev.asc", crs=CRS("+init=epsg:4326")), sp.AOO))
+plot(sp.AOO_poly, col='darkgrey', border='darkgrey', add=TRUE)
 #y <- unique(reshape2::melt(combinations)$value) # all climatically suitable sites from selection space
 
 nrow(acabau.agg[acabau.agg$suitability <= quantile(acabau.agg$suitability, 0.10) & acabau.agg$clumpSize > quantile(acabau.agg$clumpSize, 0.5),])
@@ -143,17 +160,25 @@ acabau_allsuitable <- acabau.agg[acabau.agg$suitability %in% c(min(acabau.agg[1:
 combinations_allsuitable <- combn(acabau_allsuitable$clumps, 5)
 y <- unique(reshape2::melt(combinations_allsuitable)$value) 
   
-plot(sp.AOO_poly[sp.AOO_poly$clumps %in% y,], col='orange', border='orange', add=TRUE)
+plot(sp.AOO_poly[sp.AOO_poly$clumps %in% y,], col='blue', border='blue', add=TRUE)
 plot(sp.AOO_poly[sp.AOO_poly$clumps %in% z,], col='red', border='red', add=TRUE) # selected sites
 
 
-acabau_allsuitable <- acabau.agg[acabau.agg$suitability %in% c(min(acabau.agg$suitability):max(acabau.agg$suitability)),]
-y <- unique(reshape2::melt(combinations_allsuitable)$value) 
-plot(sp.AOO_poly, fill='blue', border='blue')
-plot(sp.AOO_poly[sp.AOO_poly$clumps %in% y,], fill='orange', border='orange', add=TRUE)
+# acabau_allsuitable <- acabau.agg[acabau.agg$suitability %in% c(min(acabau.agg$suitability):max(acabau.agg$suitability)),]
+# y <- unique(reshape2::melt(combinations_allsuitable)$value) 
+# plot(sp.AOO_poly, fill='blue', border='blue')
+# plot(sp.AOO_poly[sp.AOO_poly$clumps %in% y,], fill='orange', border='orange', add=TRUE)
 
 
+z <- combinations[set.top,]
 
+a <- acabau[acabau$clumps %in% z,]
+b <- acabau_env[acabau_env$clumps %in% z,]
+
+allSite <- acabau_env
+sosSite <- b
+
+CurClimPlot(allSite,sosSite)
 
 
 
