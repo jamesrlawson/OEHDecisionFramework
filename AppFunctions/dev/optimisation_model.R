@@ -1,3 +1,5 @@
+require(magrittr)
+
 acabau_env <- readr::read_csv('acabau.csv')
 acabau_env$ID <- 1:nrow(acabau_env)
 acabau_env$soil <- as.factor(acabau_env$soil)
@@ -8,7 +10,7 @@ acabau$ID <- 1:nrow(acabau)
 acabau$protected <- as.numeric(!is.na(acabau$CAPAD))
 acabau$suitability <- (acabau$tmax_outsideNiche/max(acabau$tmax_outsideNiche) + acabau$rain_outsideNiche/max(acabau$rain_outsideNiche))/2
 
-acabau.agg <- dplyr::group_by(acabau, clumps) %>% summarise(clumpSize = length(clumps),
+acabau.agg <- dplyr::group_by(acabau, clumps) %>% dplyr::summarise(clumpSize = length(clumps),
                                                             suitability = mean(suitability)) %>% as.data.frame()
 
 
@@ -18,12 +20,12 @@ acabau.agg <- dplyr::group_by(acabau, clumps) %>% summarise(clumpSize = length(c
 acabau.agg <- acabau.agg[with(acabau.agg, order(suitability, -clumpSize)),] # order by suitability, choosing largest clumpsize for clumps with identical suitability
 
 # suitables <- length(acabau.agg$suitability[acabau.agg$suitability <= quantile(acabau.agg$suitability, 0.10)])
-suitables <- nrow(acabau.agg[acabau.agg$suitability <= quantile(acabau.agg$suitability, 0.10) & acabau.agg$clumpSize > quantile(acabau.agg$clumpSize, 0.5),])
-
+suitables <- nrow(acabau.agg[acabau.agg$suitability <= quantile(acabau.agg$suitability, 0.33) & acabau.agg$clumpSize > quantile(acabau.agg$clumpSize, 0.5),])
 suitables <- ifelse(suitables < 10, 10, suitables)
+suitables <- ifelse(suitables > 30, 30, suitables)
 
-combinations <- as.data.frame(t(combn(acabau.agg[1:10,]$clumps, 5))) 
-combinations <- as.data.frame(t(combn(acabau.agg[1:15,]$clumps, 5))) 
+# combinations <- as.data.frame(t(combn(acabau.agg[1:10,]$clumps, 5))) 
+# combinations <- as.data.frame(t(combn(acabau.agg[1:15,]$clumps, 5))) 
 
 combinations <- as.data.frame(t(combn(acabau.agg[1:suitables,]$clumps, 5))) 
 
@@ -32,29 +34,29 @@ combinations <- as.data.frame(t(combn(acabau.agg[1:suitables,]$clumps, 5)))
 #combinations <- combinations[!duplicated(t(apply(combinations,1,sort))),] 
 
 get_setSuitability <- function(x) {
-  acabau_ <- acabau %>% dplyr::group_by(clumps) %>% summarise(suitability = mean(suitability, na.rm=TRUE))
+  acabau_ <- acabau %>% dplyr::group_by(clumps) %>% dplyr::summarise(suitability = mean(suitability, na.rm=TRUE))
   acabau_[acabau_$clumps %in% x,]$suitability %>% mean(.,na.rm=TRUE)
 }
 
 get_setStability <- function(x) {
   
-  acabau_ <- acabau %>% dplyr::group_by(clumps) %>% summarise(protected = mean(protected, na.rm=TRUE),
+  acabau_ <- acabau %>% dplyr::group_by(clumps) %>% dplyr::summarise(protected = mean(protected, na.rm=TRUE),
                                                               clump_size = length(clumps))
   set.stability <- acabau_[acabau_$clumps %in% x,] %>%
-                    mutate(stability = (protected + clump_size/max(acabau_$clump_size))/2)
+                    dplyr::mutate(stability = (protected + clump_size/max(acabau_$clump_size))/2)
                     # mutate(stability = protected)
   sum(set.stability$stability, na.rm=TRUE)
 }
 
 get_setGowdis <- function(x) {
   
-  # set.envdat <- acabau_env[acabau_env$clumps %in% x,c(3:7)]
-   set.envdat <- acabau_env[acabau_env$clumps %in% x,c(4:7)]
+   set.envdat <- acabau_env[acabau_env$clumps %in% x,c(3:7)]
+   # set.envdat <- acabau_env[acabau_env$clumps %in% x,c(4:7)]
   
   set.gowdis <- cluster::daisy(set.envdat, metric='gower', stand=TRUE) # 3:7 are the environmental variables we're currently using
   
   groups <- factor(c(rep(1,nrow(as.matrix(set.gowdis))))) # need this for next calculation
-  disp <- betadisper(set.gowdis, group = groups, bias.adjust=TRUE) # calculate distances from multivariate centroid
+  disp <- vegan::betadisper(set.gowdis, group = groups, bias.adjust=TRUE) # calculate distances from multivariate centroid
  # mean(disp$distances) # calculate mean distance to centroid
   # or calculate representativeness across bins between 0-1
   # bin disp$distance into 10 bins, calculate fraction of bins represented
@@ -64,18 +66,20 @@ get_setGowdis <- function(x) {
   # mean(disp$distances) * length(unique(cut(disp$distances, breaks=seq(0,1,by=0.05), right = FALSE)))/20
   
   # or distance range?
-  max(disp$distances)-min(disp$distances)
+  #max(disp$distances)-min(disp$distances)
+  # or var(disp$distances)
+  var(disp$distances)
   
 }
 
 containsProtected <- function(x) {
-  acabau_ <- acabau %>% dplyr::group_by(clumps) %>% summarise(protected = mean(protected, na.rm=TRUE))
+  acabau_ <- acabau %>% dplyr::group_by(clumps) %>% dplyr::summarise(protected = mean(protected, na.rm=TRUE))
   acabau_ <- acabau_[acabau_$clumps %in% x,] 
   mean(acabau_$protected)
 }
 
 clumpSize <- function(x) {
-  acabau_ <- acabau %>% dplyr::group_by(clumps) %>% summarise(clumpSize = length(clumps))
+  acabau_ <- acabau %>% dplyr::group_by(clumps) %>% dplyr::summarise(clumpSize = length(clumps))
   acabau_ <- acabau_[acabau_$clumps %in% x,] 
   mean(acabau_$clumpSize)
 }
@@ -119,7 +123,6 @@ blax$set.stability_ <- blax$set.stability/max(blax$set.stability)
 blax$set.gowdis_ <- blax$set.gowdis/max(blax$set.gowdis)
 
 blax$final <- blax$set.suitability_ * blax$set.stability_ * (blax$set.gowdis_)
-#blax$final <- blax$set.suitability_ * (blax$set.gowdis_)
 
 blax$final_ <- blax$final / max(blax$final)
 
@@ -139,23 +142,45 @@ blax$final_ <- blax$final / max(blax$final)
 # z <- combinations[169,] 
 
 set.top <- blax[blax$final_ ==  max(blax$final_),]$setID
-set.top
+#set.top <- set.top - 1
 # set.top = 2070
 # set.top = 4029
+#set.top = 6031
 
 z <- combinations[set.top,]
 
 a <- acabau[acabau$clumps %in% z,]
 b <- acabau_env[acabau_env$clumps %in% z,]
 
+####### plot maps and histograms #######
+
+sp<-"Acacia pubescens"
+spdat<-readr::read_csv("AppEnvData/SpeciesObservations/SOSflora.csv") %>%
+  filter(Scientific %in% sp)
+
+source('AppFunctions/plotEnviroHists.R')
+source('AppFunctions/extractEnviroData.R')
+
+
+sp.AOO <- getAOOraster(spdat, 1) %>%
+  clump(directions=8)
+
+# get cell count for each clump
+# table(as.matrix(bla.ras.clumped))
+
+# convert raster to polygons
+sp.AOO_poly<- rasterToPolygons(sp.AOO)
+
+#######
+
 plot(env.reproj(raster("AppEnvData/elev.asc", crs=CRS("+init=epsg:4326")), sp.AOO))
 plot(sp.AOO_poly, col='darkgrey', border='darkgrey', add=TRUE)
-#y <- unique(reshape2::melt(combinations)$value) # all climatically suitable sites from selection space
 
-nrow(acabau.agg[acabau.agg$suitability <= quantile(acabau.agg$suitability, 0.10) & acabau.agg$clumpSize > quantile(acabau.agg$clumpSize, 0.5),])
+nrow(acabau.agg[acabau.agg$suitability <= quantile(acabau.agg$suitability, 0.33) & acabau.agg$clumpSize > quantile(acabau.agg$clumpSize, 0.5),])
 
-acabau_allsuitable <- acabau.agg[acabau.agg$suitability %in% c(min(acabau.agg[1:17,]$suitability):max(acabau.agg[1:17,]$suitability)),]
+ acabau_allsuitable <- acabau.agg[acabau.agg$suitability %in% c(min(acabau.agg[1:suitables,]$suitability):max(acabau.agg[1:suitables,]$suitability)),]
 #acabau_allsuitable <- acabau.agg[acabau.agg$suitability %in% acabau.agg[1:64,]$suitability,]
+
 
 combinations_allsuitable <- combn(acabau_allsuitable$clumps, 5)
 y <- unique(reshape2::melt(combinations_allsuitable)$value) 
@@ -169,7 +194,6 @@ plot(sp.AOO_poly[sp.AOO_poly$clumps %in% z,], col='red', border='red', add=TRUE)
 # plot(sp.AOO_poly, fill='blue', border='blue')
 # plot(sp.AOO_poly[sp.AOO_poly$clumps %in% y,], fill='orange', border='orange', add=TRUE)
 
-
 z <- combinations[set.top,]
 
 a <- acabau[acabau$clumps %in% z,]
@@ -182,56 +206,32 @@ CurClimPlot(allSite,sosSite)
 
 
 
-# next task is to cluster pixels by location (using adjacent pixels)
 
-library(igraph)
-library(raster)
-
-mat = rbind(c(1,0,0,0,0),
-            c(1,0,0,1,0),
-            c(0,0,1,0,0),
-            c(0,0,0,0,0),
-            c(1,1,1,1,1))
-Rmat <- raster(mat)
-Clumps <- as.matrix(clump(Rmat, directions=8))
-Clumps.ras <- raster(Clumps)
-
-Which(Clumps.ras ==1, cells = TRUE) 
-
-
-
-#turn the clumps into a list
-tot <- max(Clumps, na.rm=TRUE)
-res <- vector("list",tot)
-for (i in 1:max(Clumps, na.rm=TRUE)){
-  res[i] <- list(which(Clumps == i, arr.ind = TRUE))
-}
-
+sp<-"Acacia gordonii"
+spdat<-readr::read_csv("AppEnvData/SpeciesObservations/SOSflora.csv") %>%
+       filter(Scientific %in% sp)
 
 require(dplyr)
 bla.ras <- getAOOraster(spdat)
-plot(bla.ras)
 bla.ras.clumped <- clump(bla.ras, directions=8)
-plot(bla.ras.clumped)
 
 # get cell count for each clump
-table(as.matrix(bla.ras.clumped))
+# table(as.matrix(bla.ras.clumped))
 
 # convert raster to polygons
 sp.AOO_poly<- rasterToPolygons(bla.ras.clumped)
 
-
-dat$elev <- env.reproj(raster("AppEnvData/elev.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
-  extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
-
-sp.AOO_poly <- env.reproj(raster("AppEnvData/elev.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
-  extract(., sp.AOO_poly, fun=mean, sp=TRUE)
-
-sp.AOO_poly <- env.reproj(raster("AppEnvData/rain.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
-  extract(., sp.AOO_poly, fun=mean, sp=TRUE)
-sp.AOO_poly
-
-dat <- sp.AOO_poly %>% as.data.frame(.)
+# dat$elev <- env.reproj(raster("AppEnvData/elev.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+#   extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
+# 
+# sp.AOO_poly <- env.reproj(raster("AppEnvData/elev.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+#   extract(., sp.AOO_poly, fun=mean, sp=TRUE)
+# 
+# sp.AOO_poly <- env.reproj(raster("AppEnvData/rain.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+#   extract(., sp.AOO_poly, fun=mean, sp=TRUE)
+# sp.AOO_poly
+# 
+# dat <- sp.AOO_poly %>% as.data.frame(.)
 
 
 

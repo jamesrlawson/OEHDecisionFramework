@@ -24,7 +24,8 @@
 # allSite<-dat
 # sosSite<-subset(dat,!is.na(dat$SiteName))
 
-
+require(ggplot2)
+require(gridExtra)
 
 
 
@@ -197,52 +198,52 @@ CurClimPlot<-function(allSite,sosSite){
   
 }
 
-
-###############################
-#other variables
-
-
-futClimPlot<-function(allSite,sosSite){
-  
-  #add column to describe bins
-  allSite$loc <- "all"
-  sosSite$loc <- "sos"
-  allDat <- rbind(allSite, sosSite)
-  
-  p1<-ggplot(allDat, aes(x= NarClimfTmax, fill = loc))+
-    geom_histogram(binwidth=.25, position="identity",colour="black")+
-    theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          panel.background = element_blank(),
-          axis.line = element_line(colour = "black"),
-          legend.position="none")+
-    scale_fill_manual(values=c("#999999", "#E69F00"))+
-    ggtitle("Change in Avg. annual Tmax")+
-    labs(x=expression(~degree~C),y="Count")
-  
-  p2<-ggplot(allDat, aes(x=NarClimfRain, fill = loc))+
-    geom_histogram(binwidth=5,  position="identity",colour="black")+
-    theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          panel.background = element_blank(),
-          axis.line = element_line(colour = "black"),
-          legend.position="none")+
-    scale_fill_manual(values=c("#999999", "#E69F00"))+
-    ggtitle("Change in Avg. annual rainfall (%)")+
-    labs(x="%",y="Count")
-  
-  p3<-ggplot(allDat, aes(x=NarClimffdigt50, fill = loc))+
-    geom_histogram(binwidth=1, position="identity",colour="black")+
-    theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          panel.background = element_blank(),
-          axis.line = element_line(colour = "black"),
-          legend.position="none")+
-    scale_fill_manual(values=c("#999999", "#E69F00"))+
-    ggtitle("Change # of days with FFDI > 50")+
-    labs(x="Days", y="Count")
-  
-  return(multiplot(p1, p2, p3,cols=3))
-  
-}
-
+# 
+# ###############################
+# #other variables
+# 
+# 
+# futClimPlot<-function(allSite,sosSite){
+#   
+#   #add column to describe bins
+#   allSite$loc <- "all"
+#   sosSite$loc <- "sos"
+#   allDat <- rbind(allSite, sosSite)
+#   
+#   p1<-ggplot(allDat, aes(x= NarClimfTmax, fill = loc))+
+#     geom_histogram(binwidth=.25, position="identity",colour="black")+
+#     theme(panel.grid.major = element_blank(),
+#           panel.grid.minor = element_blank(),
+#           panel.background = element_blank(),
+#           axis.line = element_line(colour = "black"),
+#           legend.position="none")+
+#     scale_fill_manual(values=c("#999999", "#E69F00"))+
+#     ggtitle("Change in Avg. annual Tmax")+
+#     labs(x=expression(~degree~C),y="Count")
+#   
+#   p2<-ggplot(allDat, aes(x=NarClimfRain, fill = loc))+
+#     geom_histogram(binwidth=5,  position="identity",colour="black")+
+#     theme(panel.grid.major = element_blank(),
+#           panel.grid.minor = element_blank(),
+#           panel.background = element_blank(),
+#           axis.line = element_line(colour = "black"),
+#           legend.position="none")+
+#     scale_fill_manual(values=c("#999999", "#E69F00"))+
+#     ggtitle("Change in Avg. annual rainfall (%)")+
+#     labs(x="%",y="Count")
+#   
+#   p3<-ggplot(allDat, aes(x=NarClimffdigt50, fill = loc))+
+#     geom_histogram(binwidth=1, position="identity",colour="black")+
+#     theme(panel.grid.major = element_blank(),
+#           panel.grid.minor = element_blank(),
+#           panel.background = element_blank(),
+#           axis.line = element_line(colour = "black"),
+#           legend.position="none")+
+#     scale_fill_manual(values=c("#999999", "#E69F00"))+
+#     ggtitle("Change # of days with FFDI > 50")+
+#     labs(x="Days", y="Count")
+#   
+#   return(multiplot(p1, p2, p3,cols=3))
+#   
+# }
+# 

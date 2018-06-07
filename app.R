@@ -482,7 +482,7 @@ server <- function(input, output,session) {
       print(input$SOSspecies)
       
       # if the data for acabau has already been saved to .rds, read that instead of running slow EnvExtract()
-      if(input$SOSspecies == 'Acacia bynoeana' & file.exists('acabau.rds')) {
+      if(input$SOSspecies == 'Acacia pubescens' & file.exists('acabau.rds')) {
           print('loading acabau data from .rds')
           dat <- readr::read_rds('acabau.rds')
           return(dat)
@@ -507,7 +507,7 @@ server <- function(input, output,session) {
       dat <- cbind(dat, sp::over(sp.AOO_poly,managmentSite,returnList = FALSE))
       
       # if file doesn't exist already, write acabau env data to an .rds
-      if(input$SOSspecies == 'Acacia bynoeana') {
+      if(input$SOSspecies == 'Acacia pubescens') {
         if(!file.exists('acabau.rds')) {
           print('writing acabau data to file')
           readr::write_rds(dat, 'acabau.rds')
