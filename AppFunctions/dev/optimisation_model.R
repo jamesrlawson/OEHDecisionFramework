@@ -1,10 +1,10 @@
 require(magrittr)
 
-acabau_env <- readr::read_csv('acabau.csv')
+acabau_env <- readr::read_csv('pernut.csv')
 acabau_env$ID <- 1:nrow(acabau_env)
 acabau_env$soil <- as.factor(acabau_env$soil)
 
-acabau <- readr::read_csv('acabau_clumps.csv')
+acabau <- readr::read_csv('pernut_clumps.csv')
 acabau$ID <- 1:nrow(acabau)
 
 acabau$protected <- as.numeric(!is.na(acabau$CAPAD))
@@ -20,8 +20,12 @@ acabau.agg <- dplyr::group_by(acabau, clumps) %>% dplyr::summarise(clumpSize = l
 acabau.agg <- acabau.agg[with(acabau.agg, order(suitability, -clumpSize)),] # order by suitability, choosing largest clumpsize for clumps with identical suitability
 
 # suitables <- length(acabau.agg$suitability[acabau.agg$suitability <= quantile(acabau.agg$suitability, 0.10)])
-suitables <- nrow(acabau.agg[acabau.agg$suitability <= quantile(acabau.agg$suitability, 0.33) & acabau.agg$clumpSize > quantile(acabau.agg$clumpSize, 0.5),])
-suitables <- ifelse(suitables < 10, 10, suitables)
+# suitables <- nrow(acabau.agg[acabau.agg$suitability <= quantile(acabau.agg$suitability, 0.33) & acabau.agg$clumpSize > quantile(acabau.agg$clumpSize, 0.5),])
+# suitables <- nrow(acabau.agg[acabau.agg$suitability <= quantile(acabau.agg$suitability, 0.33),])
+suitables <- nrow(acabau.agg[acabau.agg$suitability <= 0.2,])
+
+
+# suitables <- ifelse(suitables < 10, 10, suitables)
 suitables <- ifelse(suitables > 30, 30, suitables)
 
 # combinations <- as.data.frame(t(combn(acabau.agg[1:10,]$clumps, 5))) 
@@ -156,14 +160,14 @@ set.top <- blax[blax$final_ ==  max(blax$final_),]$setID
 # set.top = 4029
 #set.top = 6031
 
-z <- combinations[set.top,]
+z <- combinations[[set.top]]
 
 a <- acabau[acabau$clumps %in% z,]
 b <- acabau_env[acabau_env$clumps %in% z,]
 
 ####### plot maps and histograms #######
 
-sp<-"Syzygium paniculatum"
+sp<-"Persoonia nutans"
 spdat<-readr::read_csv("AppEnvData/SpeciesObservations/SOSflora.csv") %>%
   filter(Scientific %in% sp)
 
@@ -187,9 +191,9 @@ plot(sp.AOO_poly, col='darkgrey', border='darkgrey', add=TRUE)
 
 nrow(acabau.agg[acabau.agg$suitability <= quantile(acabau.agg$suitability, 0.33) & acabau.agg$clumpSize > quantile(acabau.agg$clumpSize, 0.5),])
 
- acabau_allsuitable <- acabau.agg[acabau.agg$suitability %in% c(min(acabau.agg[1:suitables,]$suitability):max(acabau.agg[1:suitables,]$suitability)),]
+ # acabau_allsuitable <- acabau.agg[acabau.agg$suitability %in% c(min(acabau.agg[1:suitables,]$suitability):max(acabau.agg[1:suitables,]$suitability)),]
 #acabau_allsuitable <- acabau.agg[acabau.agg$suitability %in% acabau.agg[1:64,]$suitability,]
-
+acabau_allsuitable <- acabau.agg[1:suitables,]
 
 combinations_allsuitable <- combn(acabau_allsuitable$clumps, 5)
 y <- unique(reshape2::melt(combinations_allsuitable)$value) 
@@ -203,7 +207,7 @@ plot(sp.AOO_poly[sp.AOO_poly$clumps %in% z,], col='red', border='red', add=TRUE)
 # plot(sp.AOO_poly, fill='blue', border='blue')
 # plot(sp.AOO_poly[sp.AOO_poly$clumps %in% y,], fill='orange', border='orange', add=TRUE)
 
-z <- combinations[set.top,]
+z <- combinations[[set.top]]
 
 a <- acabau[acabau$clumps %in% z,]
 b <- acabau_env[acabau_env$clumps %in% z,]

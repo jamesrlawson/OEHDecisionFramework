@@ -42,7 +42,9 @@ getAOOraster <- function(spdat, Cell_size_AOO=1) {
                  floor(Corners[2,1])-h*(Cell_size_AOO*1000/4)-2*Cell_size_AOO*1000, floor(Corners[2,2])+h*(Cell_size_AOO*1000/4)+2*Cell_size_AOO*1000)
     r = raster(ext, resolution=Cell_size_AOO*1000,crs=projAEA)
     r2_AOO <- rasterize(spdat, r)
-    OCC <- length(which(!is.na(values(r2_AOO))))
+    # OCC <- length(which(!is.na(values(r2_AOO))))
+     OCC <- length(which(!is.na(r2_AOO[])))
+    
     Occupied_cells <- c(Occupied_cells, OCC)
     out.list[[h+1]] <- r2_AOO
     ### If only one occupied cell, stop the production of raster

@@ -85,7 +85,7 @@ CurClimPlot<-function(allSite,sosSite){
   
   #rainfall variability
   p3<-ggplot(allDat, aes(x=rainVar, fill = loc))+
-    geom_histogram(binwidth=0.5,  position="identity", colour=NA)+
+    geom_histogram(binwidth=0.1,  position="identity", colour=NA)+
     theme(panel.grid.major = element_blank(), 
           panel.grid.minor = element_blank(),
           panel.background = element_blank(), 
@@ -150,8 +150,7 @@ CurClimPlot<-function(allSite,sosSite){
   
   p6<-ggplot(allDat_long, aes(fill=loc))+
     geom_histogram(aes(val), binwidth=.50, position="stack", colour = NA)+
-    # geom_rect(data= subset(allDat_long, time == 'tmax_future')[1,], aes(xmin=max(allDat$tmax), xmax=(round(max(allDat$tmax_future)/0.5)*0.5)+0.25, ymin=-Inf, ymax=Inf), fill='red', alpha = 0.4, inherit.aes = FALSE) +
-    geom_rect(data= subset(allDat_long, time == 'tmax_future')[1,], aes(xmin=quantile(allDat$tmax, 0.95), xmax=(round(quantile(allDat$tmax_future, 0.95)/0.5)*0.5)+0.25, ymin=-Inf, ymax=Inf), fill='red', alpha = 0.4, inherit.aes = FALSE) +
+    geom_rect(data= subset(allDat_long, time == 'tmax_future')[1,], aes(xmin=quantile(allDat$tmax, 0.95), xmax=Inf, ymin=-Inf, ymax=Inf), fill='red', alpha = 0.4, inherit.aes = FALSE) +
     
     # geom_histogram(binwidth=.25, position="identity",colour="black")+
     theme(panel.grid.major = element_blank(),
@@ -172,8 +171,7 @@ CurClimPlot<-function(allSite,sosSite){
   
   p7<-ggplot(allDat_long, aes(fill=loc))+
     geom_histogram(aes(val), binwidth=50, position="stack", colour = NA)+
-    # geom_rect(data= subset(allDat_long, time == 'rain_future')[1,], aes(xmin=max(allDat$rain), xmax=(round(max(allDat$rain_future)/50)*50)+25, ymin=-Inf, ymax=Inf), fill='red', alpha = 0.4, inherit.aes = FALSE) +
-    geom_rect(data= subset(allDat_long, time == 'rain_future')[1,], aes(xmin=quantile(allDat$rain, 0.95), xmax=(round(quantile(allDat$rain_future, 0.95)/50)*50)+25, ymin=-Inf, ymax=Inf), fill='red', alpha = 0.4, inherit.aes = FALSE) +
+    geom_rect(data= subset(allDat_long, time == 'rain_future')[1,], aes(xmin=quantile(allDat$rain, 0.95), xmax=Inf, ymin=-Inf, ymax=Inf), fill='red', alpha = 0.4, inherit.aes = FALSE) +
     
     # geom_histogram(binwidth=.25, position="identity",colour="black")+
     theme(panel.grid.major = element_blank(),
