@@ -1,10 +1,15 @@
 require(magrittr)
+library(future)
+require(dplyr)
+require(tidyverse)
 
-acabau_env <- readr::read_csv('pernut.csv')
+plan(multiprocess)
+
+acabau_env <- readr::read_csv('acabau.csv')
 acabau_env$ID <- 1:nrow(acabau_env)
 acabau_env$soil <- as.factor(acabau_env$soil)
 
-acabau <- readr::read_csv('pernut_clumps.csv')
+acabau <- readr::read_csv('acabau_clumps.csv')
 acabau$ID <- 1:nrow(acabau)
 
 acabau$protected <- as.numeric(!is.na(acabau$CAPAD))
@@ -167,7 +172,7 @@ b <- acabau_env[acabau_env$clumps %in% z,]
 
 ####### plot maps and histograms #######
 
-sp<-"Persoonia nutans"
+sp<-"Syzygium paniculatum"
 spdat<-readr::read_csv("AppEnvData/SpeciesObservations/SOSflora.csv") %>%
   filter(Scientific %in% sp)
 
