@@ -494,6 +494,9 @@ server <- function(input, output,session) {
       
      #dat <- EnvExtract(spdat$lat,spdat$long)
      dat <- EnvExtract(spdat)
+     retainedRows <- rownames(as.data.frame(sp.na.omit(dat_[,c(3:10)])))
+     dat <- dat[retainedRows,] %>% # remove NA values extracted from env data sources (not including CAPAD)
+            as.data.frame() 
       
       #select site data
       # coords <- dat[,c("long","lat")]
@@ -501,6 +504,7 @@ server <- function(input, output,session) {
       # proj4string(coords)<-crs(sites)
       
       sp.AOO_poly <- spData() %>% getAOOraster(.,1) %>% rasterToPolygons(.)
+      sp.AOO_poly <- sp.AOO_poly[retainedRows,]
 
       sp <- input$SOSspecies
       managmentSite <- sites[sites$SciName == sp,] %>% spTransform(.,projAEA)

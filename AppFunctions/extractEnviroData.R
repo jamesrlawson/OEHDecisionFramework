@@ -1,7 +1,7 @@
-# 
+
 # # #function to extract environmental data and CAPAD protected areas
-# sp<-"Astrotricha crassifolia"
-# spdat<-read.csv("/Users/daisy/repos/OEHDecisionFramework/AppEnvData/SpeciesObservations/SOSflora.csv",header=TRUE)
+# sp<-"Syzygium paniculatum"
+# spdat<-read.csv("AppEnvData/SpeciesObservations/SOSflora.csv",header=TRUE)
 # spdat<-subset(spdat,Scientific==sp)
 # 
 # lat<-spdat$Latitude_G
@@ -73,6 +73,23 @@ env.reproj <- function(ras, AOOraster) {
 }
 
 
+# FUNCTION TO REMOVE NA's IN sp DataFrame OBJECT
+#   x           sp spatial DataFrame object
+#   margin      Remove rows (1) or columns (2) 
+sp.na.omit <- function(x, margin=1) {
+  if (!inherits(x, "SpatialPointsDataFrame") & !inherits(x, "SpatialPolygonsDataFrame")) 
+    stop("MUST BE sp SpatialPointsDataFrame OR SpatialPolygonsDataFrame CLASS OBJECT") 
+  na.index <- unique(as.data.frame(which(is.na(x@data),arr.ind=TRUE))[,margin])
+  if(margin == 1) {  
+    cat("DELETING ROWS: ", na.index, "\n") 
+    return( x[-na.index,]  ) 
+  }
+  if(margin == 2) {  
+    cat("DELETING COLUMNS: ", na.index, "\n") 
+    return( x[,-na.index]  ) 
+  }
+}
+
 EnvExtract<-function(spdat){
   
   projAEA <- crs("+init=epsg:3577 +proj=aea +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=132 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m")
@@ -106,7 +123,7 @@ EnvExtract<-function(spdat){
           spTransform(., projAEA) %>%
           over(sp.AOO_poly, .)
   sp.AOO_poly$soil <- soil$Majr_Sl
-    
+  
   # #extract point data for shapefiles
   # dat$CAPAD<-over(coords,shapefile("AppEnvData/CAPADnsw/CAPAD2_NSW.shp",p4s = paste(P4S)))$Name
   # dat$soil<-over(coords,shapefile("AppEnvData/soil/soilAtlas2M.shp",p4s = paste(P4S)))$Majr_Sl
@@ -178,6 +195,7 @@ EnvExtract<-function(spdat){
   #                    group_by(clumps) %>%
   #                    summarise(n = length(clumps)) %>%
   #                    .$n
-
-  return(as.data.frame(sp.AOO_poly))
+  
+  # return(as.data.frame(sp.AOO_poly))
+  return(sp.AOO_poly)
 }
