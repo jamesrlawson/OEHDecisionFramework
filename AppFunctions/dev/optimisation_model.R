@@ -27,7 +27,8 @@ suitables <- ifelse(suitables > 30, 30, suitables)
 # combinations <- as.data.frame(t(combn(acabau.agg[1:10,]$clumps, 5))) 
 # combinations <- as.data.frame(t(combn(acabau.agg[1:15,]$clumps, 5))) 
 
-combinations <- as.data.frame(t(combn(acabau.agg[1:suitables,]$clumps, 5))) 
+# combinations <- as.data.frame(t(combn(acabau.agg[1:suitables,]$clumps, 5))) # for use with loop
+combinations <- combn(acabau.agg[1:suitables,]$clumps, 5, simplify=FALSE) #for use with future_lapply
 
 
 # remove duplicate sets (with any row order)
@@ -85,28 +86,36 @@ clumpSize <- function(x) {
 }
 
 
-blax.list <- vector("list", length = nrow(combinations))
-# blax <- data.frame(setID = rep(NA, nrow(combinations)))
-for(i in 1:nrow(combinations)) {
-  blax <- data.frame(setID = rep(NA, 1))
-  print(round(i/length(blax.list),5))
-  # blax$setID[i] <- i
-  # blax$set.suitability[i] <- get_setSuitability(combinations[i,])
-  # blax$set.stability[i] <- get_setStability(combinations[i,])
-  # blax$set.gowdis[i] <- get_setGowdis(combinations[i,])
-  # blax$frac_protected[i] <- containsProtected(combinations[i,])
-  # blax$mean_clumpSize[i] <- clumpSize(combinations[i,])
-  blax$setID <- i
-  blax$set.suitability <- get_setSuitability(combinations[i,])
-  blax$set.stability <- get_setStability(combinations[i,])
-  blax$set.gowdis <- get_setGowdis(combinations[i,])
-  #blax$frac_protected <- containsProtected(combinations[i,])
-  #blax$mean_clumpSize <- clumpSize(combinations[i,])
-  
-  blax.list[[i]] <- blax
-}
+# blax.list <- vector("list", length = nrow(combinations))
+# # blax <- data.frame(setID = rep(NA, nrow(combinations)))
+# for(i in 1:nrow(combinations)) {
+#   blax <- data.frame(setID = rep(NA, 1))
+#   print(round(i/length(blax.list),5))
+#   # blax$setID[i] <- i
+#   # blax$set.suitability[i] <- get_setSuitability(combinations[i,])
+#   # blax$set.stability[i] <- get_setStability(combinations[i,])
+#   # blax$set.gowdis[i] <- get_setGowdis(combinations[i,])
+#   # blax$frac_protected[i] <- containsProtected(combinations[i,])
+#   # blax$mean_clumpSize[i] <- clumpSize(combinations[i,])
+#   blax$setID <- i
+#   blax$set.suitability <- get_setSuitability(combinations[i,])
+#   blax$set.stability <- get_setStability(combinations[i,])
+#   blax$set.gowdis <- get_setGowdis(combinations[i,])
+#   #blax$frac_protected <- containsProtected(combinations[i,])
+#   #blax$mean_clumpSize <- clumpSize(combinations[i,])
+#   
+#   blax.list[[i]] <- blax
+# }
+# 
+# blax <- do.call('rbind', blax.list)
 
-blax <- do.call('rbind', blax.list)
+
+blax <- data.frame(matrix(NA, length(combinations)))
+blax$setID <- 1:length(combinations)
+blax$set.suitability <- unlist(future.apply::future_lapply(t(combinations), get_setSuitability))
+blax$set.stability <- unlist(future.apply::future_lapply(t(combinations), get_setStability))
+blax$set.gowdis <- unlist(future.apply::future_lapply(t(combinations), get_setGowdis))
+
 
 
 # 
