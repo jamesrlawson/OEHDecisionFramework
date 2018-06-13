@@ -160,6 +160,8 @@ blax$final_ <- blax$final / max(blax$final)
 # z <- combinations[169,] 
 
 set.top <- blax[blax$final_ ==  max(blax$final_),]$setID
+
+#set.top = 95487
 #set.top <- set.top - 1
 # set.top = 2070
 # set.top = 4029
@@ -223,179 +225,179 @@ sosSite <- b
 CurClimPlot(allSite,sosSite)
 
 
-
-
-sp<-"Acacia gordonii"
-spdat<-readr::read_csv("AppEnvData/SpeciesObservations/SOSflora.csv") %>%
-       filter(Scientific %in% sp)
-
-require(dplyr)
-bla.ras <- getAOOraster(spdat)
-bla.ras.clumped <- clump(bla.ras, directions=8)
-
-# get cell count for each clump
-# table(as.matrix(bla.ras.clumped))
-
-# convert raster to polygons
-sp.AOO_poly<- rasterToPolygons(bla.ras.clumped)
-
-# dat$elev <- env.reproj(raster("AppEnvData/elev.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
-#   extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
 # 
-# sp.AOO_poly <- env.reproj(raster("AppEnvData/elev.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
-#   extract(., sp.AOO_poly, fun=mean, sp=TRUE)
 # 
-# sp.AOO_poly <- env.reproj(raster("AppEnvData/rain.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
-#   extract(., sp.AOO_poly, fun=mean, sp=TRUE)
-# sp.AOO_poly
+# sp<-"Acacia gordonii"
+# spdat<-readr::read_csv("AppEnvData/SpeciesObservations/SOSflora.csv") %>%
+#        filter(Scientific %in% sp)
 # 
-# dat <- sp.AOO_poly %>% as.data.frame(.)
-
-
-
-getAOOraster <- function(spdat, Cell_size_AOO=1) {
-  
-  # reproject coordinates to AEA
-  
-  projAEA <- crs("+init=epsg:3577 +proj=aea +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=132 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m")
-  
-  spdat %<>%
-    dplyr::select(Longitude_, Latitude_G) %>%
-    SpatialPoints(CRS("+init=epsg:4326")) %>%
-    spTransform(projAEA) %>%
-    `@`(coords) %>%
-    data.frame %>%
-    setNames(c("longitudeAea", "latitudeAea"))
-  
-  # calculate AOO, with 1000m grid optimisation
-  
-  Corners <- rbind(c(min(spdat[,1]), max(spdat[,1])), c(min(spdat[,2]), max(spdat[,2])))
-  
-  Occupied_cells <- c()
-  decal <- c(0,1,2,3)
-  out.list <- list()
-  for (h in decal) {
-    ext = extent(floor(Corners[1,1])-h*(Cell_size_AOO*1000/4)-2*Cell_size_AOO*1000, floor(Corners[1,2])+h*(Cell_size_AOO*1000/4)+2*Cell_size_AOO*1000, 
-                 floor(Corners[2,1])-h*(Cell_size_AOO*1000/4)-2*Cell_size_AOO*1000, floor(Corners[2,2])+h*(Cell_size_AOO*1000/4)+2*Cell_size_AOO*1000)
-    r = raster(ext, resolution=Cell_size_AOO*1000,crs=projAEA)
-    r2_AOO <- rasterize(spdat, r)
-    OCC <- length(which(!is.na(values(r2_AOO))))
-    Occupied_cells <- c(Occupied_cells, OCC)
-    out.list[[h+1]] <- r2_AOO
-    ### If only one occupied cell, stop the production of raster
-    if(OCC==1) break
-  }
-  h <- decal[which.min(Occupied_cells)]
-  Occupied_cells <- min(Occupied_cells)
-  
-  return(out.list[[h+1]])
-  
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-blaz <- data.frame(gowdis=rep(NA,ncol(bla)))
-
-for(i in 1:ncol(bla)) {
-  
-  blaz$gowdis <- get_gowdis(bla[,i])
-  
-}
-
-
-
-
-
-# Make Matrix  & Data frame 
-My.Matrix <- matrix(data=rep(c(1,2,3),each=3), ncol=3)
-My.DF <- data.frame(My.Matrix)
-
-# Example 1 ~  Using a sum() function 
-# data argument .x is My.Matrix: can feed in by pipe %>%
-# Incorrect – data structure; returns elements
-My.Matrix %>% map(.f=sum)
-
-# Correct map returns list (default)
-My.Matrix %>% as.data.frame() %>% map(.f=sum)
-# Correct map returns dbl
-My.DF %>% map_dbl(.f=sum)
-
-
-
-
-
-
-
-bla <- cluster::daisy(acabau_env[acabau_env$ID %in% c(1:3),c(3:7)], metric="gower")
-
-mean(as.vector(bla))
-
-
-
-1:10 %>% accumulate(~ .x)
-1:10 %>% accumulate(~ .y)
-
-
-#https://stackoverflow.com/questions/5671149/permute-all-unique-enumerations-of-a-vector-in-r
-
-uniqueperm2 <- function(d) {
-  dat <- factor(d)
-  N <- length(dat)
-  n <- tabulate(dat)
-  ng <- length(n)
-  if(ng==1) return(d)
-  a <- N-c(0,cumsum(n))[-(ng+1)]
-  foo <- lapply(1:ng, function(i) matrix(combn(a[i],n[i]),nrow=n[i]))
-  out <- matrix(NA, nrow=N, ncol=prod(sapply(foo, ncol)))
-  xxx <- c(0,cumsum(sapply(foo, nrow)))
-  xxx <- cbind(xxx[-length(xxx)]+1, xxx[-1])
-  miss <- matrix(1:N,ncol=1)
-  for(i in seq_len(length(foo)-1)) {
-    l1 <- foo[[i]]
-    nn <- ncol(miss)
-    miss <- matrix(rep(miss, ncol(l1)), nrow=nrow(miss))
-    k <- (rep(0:(ncol(miss)-1), each=nrow(l1)))*nrow(miss) + 
-      l1[,rep(1:ncol(l1), each=nn)]
-    out[xxx[i,1]:xxx[i,2],] <- matrix(miss[k], ncol=ncol(miss))
-    miss <- matrix(miss[-k], ncol=ncol(miss))
-  }
-  k <- length(foo)
-  out[xxx[k,1]:xxx[k,2],] <- miss
-  out <- out[rank(as.numeric(dat), ties="first"),]
-  foo <- cbind(as.vector(out), as.vector(col(out)))
-  out[foo] <- d
-  t(out)
-}
-
-
-
-
-
-
-
-dat <- 1:5
-install.packages('iterpc')
-library(iterpc)
-h <- as.data.frame(getall(iterpc(table(dat), order=TRUE)))
-h$ID <- sum(apply(h, 1, prod))
-
-
-combinations <- unique(expand.grid(1:3, 1:3, 1:3))
-combinations <- unique(expand.grid(i:(i+2), i:(i+2), i:(i+2)))
-
-combinations[,!duplicated(combinations)]
+# require(dplyr)
+# bla.ras <- getAOOraster(spdat)
+# bla.ras.clumped <- clump(bla.ras, directions=8)
+# 
+# # get cell count for each clump
+# # table(as.matrix(bla.ras.clumped))
+# 
+# # convert raster to polygons
+# sp.AOO_poly<- rasterToPolygons(bla.ras.clumped)
+# 
+# # dat$elev <- env.reproj(raster("AppEnvData/elev.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+# #   extract(., sp.AOO_poly, fun=mean) %>% as.vector(.)
+# # 
+# # sp.AOO_poly <- env.reproj(raster("AppEnvData/elev.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+# #   extract(., sp.AOO_poly, fun=mean, sp=TRUE)
+# # 
+# # sp.AOO_poly <- env.reproj(raster("AppEnvData/rain.asc", crs=CRS("+init=epsg:4326")), sp.AOO) %>%
+# #   extract(., sp.AOO_poly, fun=mean, sp=TRUE)
+# # sp.AOO_poly
+# # 
+# # dat <- sp.AOO_poly %>% as.data.frame(.)
+# 
+# 
+# 
+# getAOOraster <- function(spdat, Cell_size_AOO=1) {
+#   
+#   # reproject coordinates to AEA
+#   
+#   projAEA <- crs("+init=epsg:3577 +proj=aea +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=132 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m")
+#   
+#   spdat %<>%
+#     dplyr::select(Longitude_, Latitude_G) %>%
+#     SpatialPoints(CRS("+init=epsg:4326")) %>%
+#     spTransform(projAEA) %>%
+#     `@`(coords) %>%
+#     data.frame %>%
+#     setNames(c("longitudeAea", "latitudeAea"))
+#   
+#   # calculate AOO, with 1000m grid optimisation
+#   
+#   Corners <- rbind(c(min(spdat[,1]), max(spdat[,1])), c(min(spdat[,2]), max(spdat[,2])))
+#   
+#   Occupied_cells <- c()
+#   decal <- c(0,1,2,3)
+#   out.list <- list()
+#   for (h in decal) {
+#     ext = extent(floor(Corners[1,1])-h*(Cell_size_AOO*1000/4)-2*Cell_size_AOO*1000, floor(Corners[1,2])+h*(Cell_size_AOO*1000/4)+2*Cell_size_AOO*1000, 
+#                  floor(Corners[2,1])-h*(Cell_size_AOO*1000/4)-2*Cell_size_AOO*1000, floor(Corners[2,2])+h*(Cell_size_AOO*1000/4)+2*Cell_size_AOO*1000)
+#     r = raster(ext, resolution=Cell_size_AOO*1000,crs=projAEA)
+#     r2_AOO <- rasterize(spdat, r)
+#     OCC <- length(which(!is.na(values(r2_AOO))))
+#     Occupied_cells <- c(Occupied_cells, OCC)
+#     out.list[[h+1]] <- r2_AOO
+#     ### If only one occupied cell, stop the production of raster
+#     if(OCC==1) break
+#   }
+#   h <- decal[which.min(Occupied_cells)]
+#   Occupied_cells <- min(Occupied_cells)
+#   
+#   return(out.list[[h+1]])
+#   
+# }
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# blaz <- data.frame(gowdis=rep(NA,ncol(bla)))
+# 
+# for(i in 1:ncol(bla)) {
+#   
+#   blaz$gowdis <- get_gowdis(bla[,i])
+#   
+# }
+# 
+# 
+# 
+# 
+# 
+# # Make Matrix  & Data frame 
+# My.Matrix <- matrix(data=rep(c(1,2,3),each=3), ncol=3)
+# My.DF <- data.frame(My.Matrix)
+# 
+# # Example 1 ~  Using a sum() function 
+# # data argument .x is My.Matrix: can feed in by pipe %>%
+# # Incorrect – data structure; returns elements
+# My.Matrix %>% map(.f=sum)
+# 
+# # Correct map returns list (default)
+# My.Matrix %>% as.data.frame() %>% map(.f=sum)
+# # Correct map returns dbl
+# My.DF %>% map_dbl(.f=sum)
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# bla <- cluster::daisy(acabau_env[acabau_env$ID %in% c(1:3),c(3:7)], metric="gower")
+# 
+# mean(as.vector(bla))
+# 
+# 
+# 
+# 1:10 %>% accumulate(~ .x)
+# 1:10 %>% accumulate(~ .y)
+# 
+# 
+# #https://stackoverflow.com/questions/5671149/permute-all-unique-enumerations-of-a-vector-in-r
+# 
+# uniqueperm2 <- function(d) {
+#   dat <- factor(d)
+#   N <- length(dat)
+#   n <- tabulate(dat)
+#   ng <- length(n)
+#   if(ng==1) return(d)
+#   a <- N-c(0,cumsum(n))[-(ng+1)]
+#   foo <- lapply(1:ng, function(i) matrix(combn(a[i],n[i]),nrow=n[i]))
+#   out <- matrix(NA, nrow=N, ncol=prod(sapply(foo, ncol)))
+#   xxx <- c(0,cumsum(sapply(foo, nrow)))
+#   xxx <- cbind(xxx[-length(xxx)]+1, xxx[-1])
+#   miss <- matrix(1:N,ncol=1)
+#   for(i in seq_len(length(foo)-1)) {
+#     l1 <- foo[[i]]
+#     nn <- ncol(miss)
+#     miss <- matrix(rep(miss, ncol(l1)), nrow=nrow(miss))
+#     k <- (rep(0:(ncol(miss)-1), each=nrow(l1)))*nrow(miss) + 
+#       l1[,rep(1:ncol(l1), each=nn)]
+#     out[xxx[i,1]:xxx[i,2],] <- matrix(miss[k], ncol=ncol(miss))
+#     miss <- matrix(miss[-k], ncol=ncol(miss))
+#   }
+#   k <- length(foo)
+#   out[xxx[k,1]:xxx[k,2],] <- miss
+#   out <- out[rank(as.numeric(dat), ties="first"),]
+#   foo <- cbind(as.vector(out), as.vector(col(out)))
+#   out[foo] <- d
+#   t(out)
+# }
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# dat <- 1:5
+# install.packages('iterpc')
+# library(iterpc)
+# h <- as.data.frame(getall(iterpc(table(dat), order=TRUE)))
+# h$ID <- sum(apply(h, 1, prod))
+# 
+# 
+# combinations <- unique(expand.grid(1:3, 1:3, 1:3))
+# combinations <- unique(expand.grid(i:(i+2), i:(i+2), i:(i+2)))
+# 
+# combinations[,!duplicated(combinations)]
