@@ -1,12 +1,12 @@
-
+# 
 # # #function to extract environmental data and CAPAD protected areas
-# sp<-"Syzygium paniculatum"
+# sp<-"Acacia acanthoclada"
 # spdat<-read.csv("AppEnvData/SpeciesObservations/SOSflora.csv",header=TRUE)
 # spdat<-subset(spdat,Scientific==sp)
 # 
 # lat<-spdat$Latitude_G
 # long<-spdat$Longitude_
-
+# 
 
 require(raster)
 require(sp)
@@ -196,6 +196,10 @@ EnvExtract<-function(spdat){
   #                    summarise(n = length(clumps)) %>%
   #                    .$n
   
-  # return(as.data.frame(sp.AOO_poly))
+  # remove NA values extracted from env data sources (not including CAPAD)
+  sp.AOO_poly %<>% as.data.frame()
+  retainedRows <- rownames(na.omit(sp.AOO_poly[,c(3:10)]))
+  sp.AOO_poly <- sp.AOO_poly[retainedRows,]
+  
   return(sp.AOO_poly)
 }
